@@ -5,7 +5,7 @@ client = datastore.Client()
 bp = Blueprint('crypto', __name__, url_prefix='/crypto')
 
 
-@app.route('/training_data', methods=['GET'])
+@bp.route('/training_data', methods=['GET'])
 def get_all_training_data():
     pass
 
