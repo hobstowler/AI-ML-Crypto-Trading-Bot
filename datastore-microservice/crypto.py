@@ -10,7 +10,7 @@ def get_all_training_data():
     pass
 
 
-@app.route('/training_data/<data_name', methods=['GET', 'POST', 'DELETE'])
+@bp.route('/training_data/<data_name', methods=['GET', 'POST', 'DELETE'])
 def training_data(data_name: str):
     pass
 
