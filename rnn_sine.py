@@ -17,10 +17,10 @@ num_cycles = 6
 hidden_size = 10
 input_size = 1
 output_size = 1
-lr = 0.001
+lr = 0.01
 
 # For data collection and analysis
-iter_save_values = [10, 100, 500]
+iter_save_values = [10, 100, 200, 300, 400, 500]
 loss_values = []
 pred_sets = {}
 
