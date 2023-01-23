@@ -1,4 +1,4 @@
-from flask import Blueprint
+from flask import Blueprint, request, jsonify
 from google.cloud import datastore
 
 client = datastore.Client()
@@ -12,14 +12,19 @@ def get_all_training_data():
 
 @bp.route('/training_data/<data_name', methods=['GET', 'POST', 'DELETE'])
 def training_data(data_name: str):
-    pass
+    if request.method == 'GET':
+        return get_training_data(data_name)
+    elif request.method == 'POST':
+        return create_training_data(data_name)
+    elif request.method == 'DELETE':
+        return delete_training_data(data_name)
 
 
 def get_training_data(data_name: str):
     pass
 
 
-def save_training_data(data_name: str):
+def create_training_data(data_name: str):
     pass
 
 
