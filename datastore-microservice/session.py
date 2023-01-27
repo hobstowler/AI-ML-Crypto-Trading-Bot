@@ -1,49 +1,19 @@
 from flask import Blueprint, request, jsonify
 from google.cloud import datastore
+import datetime
 
 client = datastore.Client()
 bp = Blueprint('session', __name__, url_prefix='/session')
 
-@bp.route('/:session_id', methods=['GET', 'PUT', 'DELETE'])
-def specific_session(session_id: str):
-    key = client.key('Session', int(session_id))
-    session = client.get(key)
-
-    if not session:
-        return jsonify({"error": "No session with that session_id was found."}), 404
-
-    if request.method == 'GET':
-        return get_session(request, session)
-    elif request.method == 'PUT':
-        return edit_session(request, session)
-    elif request.method == 'DELETE':
-        return delete_session(key, session)
-    else:
-        return '', 400
-
-
-def get_session(request, result):
-    session = dict(result)
-    session['id'] = result.id
-    session['transaction_url'] = f'{request.base_url}transactions'
-    session['self'] = f'{request.base_url}'
-
-    query = client.query(kind='Transaction')
-    query.add_filter('session_id', '=', session.id)
-    session['transaction_total'] = len(list(query.fetch))
-
-    return jsonify(session), 200
-
-
-def edit_session(session):
-    return jsonify({"error": "Method not implemented."}), 501
-
-
-def delete_session(key, session):
-    pass
-
 
 @bp.route('/', methods=['GET', 'POST'])
+def sessions():
+    if request.method == 'GET':
+        return get_all_sessions()
+    elif request.method == 'POST':
+        return create_session(request)
+
+
 def get_all_sessions():
     try:
         limit = int(request.args.get('limit', 100))
@@ -76,11 +46,81 @@ def get_all_sessions():
     })
 
 
-@bp.route('/:session_id/transactions', methods=['GET'])
-def get_transactions(session_id: str):
-    if request.method != 'GET':
+def create_session(request):
+    json = request.get_json()
+    try:
+        session_name = json['session_name']
+        session_type = json['session_type']
+        starting_balance = json['starting_balance']
+        starting_coins = json['starting_coins']
+        crypto_type = json['crypto_type']
+    except KeyError:
+        return jsonify({"error": "Missing required field(s)."})
+
+    try:
+        session_start = json['session_start']
+    except KeyError:
+        session_start = datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
+
+    
+
+
+@bp.route('/<session_id>', methods=['GET', 'PATCH', 'DELETE'])
+def specific_session(session_id: str):
+    key = client.key('Session', int(session_id))
+    session = client.get(key)
+
+    if not session:
+        return jsonify({"error": "No session with that session_id was found."}), 404
+
+    if request.method == 'GET':
+        return get_session(request, session)
+    elif request.method == 'PATCH':
+        return edit_session(request, session)
+    elif request.method == 'DELETE':
+        return delete_session(key, session)
+    else:
+        return '', 400
+
+
+def get_session(request, result):
+    session = dict(result)
+    session['id'] = result.id
+    session['transaction_url'] = f'{request.base_url}transactions'
+    session['self'] = f'{request.base_url}'
+
+    query = client.query(kind='Transaction')
+    query.add_filter('session_id', '=', session.id)
+    session['transaction_total'] = len(list(query.fetch))
+
+    return jsonify(session), 200
+
+
+def edit_session(session):
+    return jsonify({"error": "Method not implemented."}), 501
+
+
+def delete_session(key, session):
+    pass
+
+
+@bp.route('/<session_id>/transactions', methods=['GET', 'POST'])
+def session_transactions(session_id: str):
+    if request.method == 'POST':
+        json = request.get_json()
+        if json['type'] == 'BUY':
+            return buy_crypto(session_id)
+        elif json['type'] == 'SELL':
+            return sell_crypto(session_id)
+        else:
+            return '', 400
+    elif request.method == 'GET':
+        get_transactions(session_id)
+    else:
         return 'Not found: invalid request method.', 404
 
+
+def get_transactions(session_id: str):
     query = client.query(kind='Trade')
     query.add_filter('session_id', '=', session_id)
 
@@ -100,7 +140,7 @@ def get_transactions(session_id: str):
     }), 200
 
 
-@bp.route('/:session_id/transactions/:transaction_id', methods=['GET', 'DELETE'])
+@bp.route('/<session_id>/transactions/<transaction_id>', methods=['GET', 'DELETE'])
 def transactions(session_id: str, transaction_id: str):
     key = client.key('Transaction', int(transaction_id))
     transaction = client.get(key)
@@ -133,11 +173,9 @@ def delete_transaction(key):
     return '', 204
 
 
-@bp.route('/:session_id/buy', methods=['POST'])
 def buy_crypto(session_id: str):
     pass
 
 
-@bp.route('/:session_id/sell', methods=['POST'])
 def sell_crypto(session_id: str):
     pass
