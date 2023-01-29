@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -90,6 +92,25 @@ def import_data():
         return pd.read_csv(TRAIN_DATA_PATH)
     else:
         return pd.read_csv(TEST_DATA_PATH)
+
+
+dp = [0]
+
+
+def max_profit() -> int:
+    """
+    Part of loss function.
+    :param next_price:
+    :return:
+    """
+    global steps_taken
+    global prices
+    global dp  # TODO tensor-ize it
+    if steps_taken == 0:
+        return 0
+    dp.append(dp[steps_taken - 1] + max(0, prices[steps_taken] - prices[steps_taken - 1]))
+
+    return dp[steps_taken]
 
 
 if __name__ == '__main__':
