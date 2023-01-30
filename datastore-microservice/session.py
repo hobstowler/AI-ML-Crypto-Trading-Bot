@@ -168,7 +168,35 @@ def session_transactions(session_id: str):
 
 
 def create_transaction(request):
-    pass
+    json = request.json()
+    try:
+        session_id = json['session_id']
+        transaction_type = json['type']
+        crypto_type = json['crypto_type']
+        amount = json['amount']
+        value = json['value']
+    except KeyError:
+        return jsonify({"error": "missing required fields"}), 404
+
+    try:
+        trans_dt_tm = json['transaction_date_time']
+    except KeyError:
+        trans_dt_tm = datetime.utcnow().strftime('%m/%d/%Y, %H:%M:%S')
+
+    transaction = datastore.Entity(client.key('Transaction'))
+    transaction.update({
+        'session_id': session_id,
+        'type': transaction_type,
+        'crypto_type': crypto_type,
+        'amount': amount,
+        'value': value,
+        'transaction_date_time': trans_dt_tm
+    })
+    client.put(transaction)
+    res = dict(transaction)
+    res['id'] = transaction.id
+    res['self'] = f'{request.base_url}{transaction.id}'
+    return jsonify(res), 201
 
 
 def get_transactions(session_id: str):
@@ -224,9 +252,3 @@ def delete_transaction(key):
     return '', 204
 
 
-def buy_crypto(session_id: str):
-    pass
-
-
-def sell_crypto(session_id: str):
-    pass
