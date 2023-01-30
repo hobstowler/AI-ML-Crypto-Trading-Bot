@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from google.cloud import datastore
-import datetime
+from datetime import datetime, timezone
 
 client = datastore.Client()
 bp = Blueprint('session', __name__, url_prefix='/session')
@@ -20,6 +20,7 @@ def get_all_sessions():
         offset = int(request.args.get('offset', 0))
     except ValueError:
         return 'Invalid value for limit. Limit argument must be an integer.', 400
+    limit = 100 if limit > 100 else limit
 
     query = client.query(kind='Session')
     total = len(list(query.fetch()))
@@ -43,26 +44,47 @@ def get_all_sessions():
         "total": total,
         "sessions": sessions,
         "next": next_url if next_url is not None else ''
-    })
+    }), 200
 
 
 def create_session(request):
     json = request.get_json()
     try:
         session_name = json['session_name']
-        session_type = json['session_type']
+        session_type = json['type']
         starting_balance = json['starting_balance']
         starting_coins = json['starting_coins']
         crypto_type = json['crypto_type']
     except KeyError:
-        return jsonify({"error": "Missing required field(s)."})
+        return jsonify({"error": "Missing required field(s)."}), 400
 
     try:
         session_start = json['session_start']
     except KeyError:
-        session_start = datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
+        session_start = datetime.utcnow().strftime('%m/%d/%Y, %H:%M:%S')
 
-    
+    session = datastore.Entity(client.key('Session'))
+    session.update({
+        'session_name': session_name,
+        'type': session_type,
+        'model_name': json['model_name'] if 'model_name' in json else None,
+        'session_start': session_start,
+        'session_end': json['session_end'] if 'session_end' in json else None,
+        'starting_balance': starting_balance,
+        'ending_balance': json['ending_balance'] if 'ending_balance' in json else None,
+        'starting_coins': starting_coins,
+        'ending_coins': json['ending_coins'] if 'ending_coins' in json else None,
+        'coins_sold': json['coins_sold'] if 'coins_sold' in json else None,
+        'coins_bought': json['coins_bought'] if 'coins_bought' in json else None,
+        'number_of_trades': json['number_of_trades'] if 'number_of_trades' in json else None,
+        'crypto_type': crypto_type,
+    })
+
+    client.put(session)
+    res = dict(session)
+    res['id'] = session.id
+    res['self'] = f'{request.base_url}{session.id}'
+    return jsonify(res), 201
 
 
 @bp.route('/<session_id>', methods=['GET', 'PATCH', 'DELETE'])
@@ -96,12 +118,41 @@ def get_session(request, result):
     return jsonify(session), 200
 
 
-def edit_session(session):
-    return jsonify({"error": "Method not implemented."}), 501
+def edit_session(request, session):
+    json = request.get_json()
+
+    session.update({
+        'session_name': json['session_name'] if 'session_name' in json else None,
+        'type': json['type'] if 'type' in json else None,
+        'model_name': json['model_name'] if 'model_name' in json else None,
+        'session_start': json['session_start'] if 'session_start' in json else None,
+        'session_end': json['session_end'] if 'session_end' in json else None,
+        'starting_balance': json['starting_balance'] if 'starting_balance' in json else None,
+        'ending_balance': json['ending_balance'] if 'ending_balance' in json else None,
+        'starting_coins': json['starting_coins'] if 'starting_coins' in json else None,
+        'ending_coins': json['ending_coins'] if 'ending_coins' in json else None,
+        'coins_sold': json['coins_sold'] if 'coins_sold' in json else None,
+        'coins_bought': json['coins_bought'] if 'coins_bought' in json else None,
+        'number_of_trades': json['number_of_trades'] if 'number_of_trades' in json else None,
+        'crypto_type': json['crypto_type'] if 'crypto_type' in json else None,
+    })
+    client.put(session)
+
+    res = dict(session)
+    res['id'] = session.id
+    res['self'] = f'{request.base_url}{session.id}'
+    return jsonify(res), 200
 
 
 def delete_session(key, session):
-    pass
+    query = client.query(kind='Transaction')
+    query.add_filter('session_id', '=', session.id)
+    transactions = query.fetch()
+    for t in transactions:
+        client.delete(client.key('Transaction', int(t.id)))
+
+    client.delete(key)
+    return '', 204
 
 
 @bp.route('/<session_id>/transactions', methods=['GET', 'POST'])

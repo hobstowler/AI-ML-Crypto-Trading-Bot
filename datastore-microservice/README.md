@@ -28,7 +28,7 @@ Entity describing a trading session with various measures related to the trading
 | type             | The type of session.                                                        | string   | Training or Testing session.                    |
 | model_name       | Name of the model used in the session.                                      | string   |                                                 |
 | session_start    | Time the session started.                                                   | datetime | Can be actual time or start of time of data set |
-| session end      | Time the session ended.                                                     | datetime | Can be actual time or end time of of data set   |
+| session_end      | Time the session ended.                                                     | datetime | Can be actual time or end time of of data set   |
 | starting_balance | Balance in dollars at the start of the session.                             | float    |                                                 |
 | ending_balance   | Balance in dollars at the end of the session.                               | float    |                                                 |
 | starting_coins   | Number of coins at the start of the session.                                | float    |                                                 |
