@@ -9,6 +9,6 @@ class Project:
 
     def get_secret(self, secret_name, version='latest') -> str:
         response = self.secret_client.access_secret_version(request={
-            'name': f'projects/{self.project_id}/secrets/{secret_name}/{version}'
+            'name': f'projects/{self.project_id}/secrets/{secret_name}/versions/{version}'
         })
         return response.payload.data.decode('UTF-8')
