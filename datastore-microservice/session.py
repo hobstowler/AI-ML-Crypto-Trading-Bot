@@ -36,7 +36,7 @@ def get_all_sessions():
     sessions = []
     for result in results:
         session = dict(result)
-        session['session_id'] = result.id
+        session['id'] = result.id
         session['self'] = f'{request.base_url}{result.id}/transactions'
         sessions.append(session)
 
@@ -108,12 +108,12 @@ def specific_session(session_id: str):
 def get_session(request, result):
     session = dict(result)
     session['id'] = result.id
-    session['transaction_url'] = f'{request.base_url}transactions'
+    session['transaction_url'] = f'{request.base_url}/transactions'
     session['self'] = f'{request.base_url}'
 
     query = client.query(kind='Transaction')
-    query.add_filter('session_id', '=', session.id)
-    session['transaction_total'] = len(list(query.fetch))
+    query.add_filter('id', '=', result.id)
+    session['transaction_total'] = len(list(query.fetch()))
 
     return jsonify(session), 200
 
@@ -121,7 +121,9 @@ def get_session(request, result):
 def edit_session(request, session):
     json = request.get_json()
 
-    session.update({
+    for key, value in json.items():
+        session.update({key: value})
+    """session.update({
         'session_name': json['session_name'] if 'session_name' in json else None,
         'type': json['type'] if 'type' in json else None,
         'model_name': json['model_name'] if 'model_name' in json else None,
@@ -135,7 +137,7 @@ def edit_session(request, session):
         'coins_bought': json['coins_bought'] if 'coins_bought' in json else None,
         'number_of_trades': json['number_of_trades'] if 'number_of_trades' in json else None,
         'crypto_type': json['crypto_type'] if 'crypto_type' in json else None,
-    })
+    })"""
     client.put(session)
 
     res = dict(session)
@@ -158,17 +160,15 @@ def delete_session(key, session):
 @bp.route('/<session_id>/transactions', methods=['GET', 'POST'])
 def session_transactions(session_id: str):
     if request.method == 'POST':
-        json = request.get_json()
-        if json['type'] == 'BUY':
-            return buy_crypto(session_id)
-        elif json['type'] == 'SELL':
-            return sell_crypto(session_id)
-        else:
-            return '', 400
+        return create_transaction(request)
     elif request.method == 'GET':
-        get_transactions(session_id)
+        return get_transactions(session_id)
     else:
         return 'Not found: invalid request method.', 404
+
+
+def create_transaction(request):
+    pass
 
 
 def get_transactions(session_id: str):

@@ -1,5 +1,5 @@
 runtime: python39
-service: datastore-micro
+service: default
 
 handlers:
 - url: /

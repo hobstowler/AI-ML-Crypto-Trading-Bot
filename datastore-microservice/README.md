@@ -6,6 +6,10 @@ This is a microservice for storing, retrieving and deleting training data and se
 
 ## Data Model
 
+### Model
+
+TBD
+
 ### Data
 
 TBD
