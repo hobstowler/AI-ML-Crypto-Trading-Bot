@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from google.cloud import datastore
 
 client = datastore.Client()
-bp = Blueprint('crypto', __name__, url_prefix='/crypto')
+bp = Blueprint('data', __name__, url_prefix='/data')
 
 
 @bp.route('/training_data', methods=['GET'])
@@ -10,7 +10,7 @@ def get_all_training_data():
     pass
 
 
-@bp.route('/training_data/<data_name', methods=['GET', 'POST', 'DELETE'])
+@bp.route('/training_data/<data_name>', methods=['GET', 'POST', 'DELETE'])
 def training_data(data_name: str):
     if request.method == 'GET':
         return get_training_data(data_name)
