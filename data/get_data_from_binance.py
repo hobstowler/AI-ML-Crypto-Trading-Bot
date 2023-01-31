@@ -28,7 +28,7 @@ test_end_dt_tm = '2022-12-31 23:59:00'
 test_end_dt = int(datetime.strptime(test_end_dt_tm, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp() * 1000)
 
 train = True
-test = True
+test = False
 
 symbol = 'BTCUSD'
 interval = '1m'
@@ -68,7 +68,7 @@ if train:
             break
 
     df = pd.concat(dataframes, ignore_index=True)
-    df.to_csv(f'{os.getcwd()}/train_{train_start_dt_tm[:10]}_{train_end_dt_tm[:10]}_{interval}.csv', index=False)
+    df.to_csv(f'{os.getcwd()}/all_{train_start_dt_tm[:10]}-{train_end_dt_tm[:10]}_{interval}.csv', index=False)
 
 if test:
     dataframes = []
