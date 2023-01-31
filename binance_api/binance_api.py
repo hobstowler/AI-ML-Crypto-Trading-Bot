@@ -46,7 +46,7 @@ class BinanceAPI:
         }
 
     def get_historical_data_candles(
-        self, ticker_symobol: str, minutes_from_now: int, time_interval_in_minutes: int):
+        self, ticker_symobol: str, start_time: str, end_time: str, time_interval_in_minutes: int):
         """Retrieves past candlestick data for `ticker_symbol`.
 
         Args:
@@ -60,19 +60,20 @@ class BinanceAPI:
         Returns:
             (list): list of OHLCV values from Binance.
         """
-        if minutes_from_now < 1:
-            raise ValueError("minutes_from_now must be larger that 0.")
         time_interval = self.get_kline_intervals().get(time_interval_in_minutes)
         if time_interval is None:
             raise ValueError("time_interval_in_minutes is invalid.")
-        current_time = datetime.datetime.now()
-        past_time = current_time - datetime.timedelta(minutes=minutes_from_now)
-        return self._client.get_historical_klines(
-            ticker_symobol, time_interval, str(past_time), str(current_time))
+        start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d")
+        end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d")
+        self._client.API_TESTNET_URL = "https://api.binance.us/api"
+        data = self._client.get_historical_klines(
+            ticker_symobol, time_interval, str(start_time), str(end_time))
+        self._client.API_TESTNET_URL = "https://testnet.binance.vision/api"
+        return data
 
 
     def get_candlestick_dataframe(
-        self, ticker_symbol: str, minutes_from_now: int, time_inteval_in_minutes: int):
+        self, ticker_symbol: str, start_time: str, end_time: str, time_inteval_in_minutes: int):
         """Gets a Pandas-labelled dataframe of candlestick data
 
         Args:
@@ -84,7 +85,7 @@ class BinanceAPI:
             (Pandas.DataFrame): Two-dimensional, size-mutable, tabular data of requested candles.
         """
         candles = self.get_historical_data_candles(
-            ticker_symbol, minutes_from_now, time_inteval_in_minutes)
+            ticker_symbol, start_time, end_time, time_inteval_in_minutes)
         candles_dataframe = pandas.DataFrame(
             candles, 
             columns=[
