@@ -5,6 +5,10 @@ import argparse
 from sklearn.preprocessing import MinMaxScaler
 
 def generate_start_indicies(length, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
+    '''
+    All this function does is caculate where the start indicies of each set are. 
+    It does the train/val/test split and shuffles the start indicies.
+    '''
 
     if abs((train_split + val_split + test_split) - 1.0) > 0.0001:
         raise ValueError("train_split + val_split + test_split must equal 1")
@@ -35,6 +39,9 @@ def generate_start_indicies(length, input_len, target_len, train_split=0.8, val_
     return train_indicies, val_indicies, test_indicies
 
 def generate_full_indicies(length, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
+    '''
+    Takes the start indicies and fills in the rest of the index values for each set for a given input or target length.
+    '''
 
     train_indicies_start, val_indicies_start, test_indicies_start = generate_start_indicies(length, input_len, target_len, train_split, val_split, test_split, seed)
 
@@ -78,6 +85,9 @@ def normalize_data(df):
     return df
 
 def generate_csv_datasets(input_file, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
+    '''
+    Makes the train, val, and test datasets from the input file and returns them as csv files.
+    '''
 
     # Read in the input file
     df = pandas.read_csv(input_file)
@@ -109,7 +119,7 @@ def generate_csv_datasets(input_file, input_len, target_len, train_split=0.8, va
 
 def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
     '''
-    Makes tensors of shape (batch_size, seq_len, num_features) from a dataframe
+    Makes pytorch tensors of shape (batch_size, seq_len, num_features) from a dataframe.
     '''
 
     # Read in the input file
