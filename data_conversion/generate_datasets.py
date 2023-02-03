@@ -1,6 +1,8 @@
 import pandas 
+import torch
 import numpy as np
 import argparse
+from sklearn.preprocessing import MinMaxScaler
 
 def generate_start_indicies(length, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
 
@@ -32,7 +34,6 @@ def generate_start_indicies(length, input_len, target_len, train_split=0.8, val_
 
     return train_indicies, val_indicies, test_indicies
 
-
 def generate_full_indicies(length, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
 
     train_indicies_start, val_indicies_start, test_indicies_start = generate_start_indicies(length, input_len, target_len, train_split, val_split, test_split, seed)
@@ -60,11 +61,29 @@ def generate_full_indicies(length, input_len, target_len, train_split=0.8, val_s
 
     return all_indicies
 
+def normalize_data(df):
+    '''
+    Normalize every column that is a number type in the dataframe
+    '''
 
-def generate_datasets(input_file, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
+    # Generate list of dataframe columns whos type is a number
+    number_columns = []
+    for column in df.columns:
+        if np.issubdtype(df[column].dtype, np.number):
+            number_columns.append(column)
+
+    # Normalize the data
+    scaler = MinMaxScaler()
+    df[number_columns] = scaler.fit_transform(df[number_columns])
+    return df
+
+def generate_csv_datasets(input_file, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
 
     # Read in the input file
     df = pandas.read_csv(input_file)
+
+    # Normalize the data
+    df = normalize_data(df)
 
     all_indicies = generate_full_indicies(len(df), input_len, target_len, train_split, val_split, test_split, seed)
 
@@ -78,14 +97,49 @@ def generate_datasets(input_file, input_len, target_len, train_split=0.8, val_sp
     test_input_df = df.iloc[all_indicies['test_inputs']]
     test_target_df = df.iloc[all_indicies['test_targets']]
 
-    # Write the datasets to files
-    train_input_df.to_csv(f"./train_input_{input_len}.csv", index=False)
-    train_target_df.to_csv(f"./train_target_{target_len}.csv", index=False)
-    val_input_df.to_csv(f"./val_input_{input_len}.csv", index=False)
-    val_target_df.to_csv(f"./val_target_{target_len}.csv", index=False)
-    test_input_df.to_csv(f"./test_input_{input_len}.csv", index=False)
-    test_target_df.to_csv(f"./test_target_{target_len}.csv", index=False)
+    folder_name='data_conversion'
 
-#generate_datasets("./data_conversion/test_data.csv", 3, 1, 0.8, 0.1, 0.1, 0)
+    # Write the datasets to files
+    train_input_df.to_csv(f"./{folder_name}/train_input_{input_len}.csv", index=False)
+    train_target_df.to_csv(f"./{folder_name}/train_target_{target_len}.csv", index=False)
+    val_input_df.to_csv(f"./{folder_name}/val_input_{input_len}.csv", index=False)
+    val_target_df.to_csv(f"./{folder_name}/val_target_{target_len}.csv", index=False)
+    test_input_df.to_csv(f"./{folder_name}/test_input_{input_len}.csv", index=False)
+    test_target_df.to_csv(f"./{folder_name}/test_target_{target_len}.csv", index=False)
+
+def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
+    '''
+    Makes tensors of shape (batch_size, seq_len, num_features) from a dataframe
+    '''
+
+    # Read in the input file
+    df = pandas.read_csv(infile)
+
+    tensors = []
+    num_sequences = len(df) // seq_len
+    num_tensors = num_sequences // batch_size
+
+    # Make each individual tensor
+    for tensor_idx in range(num_tensors):
+
+        tensor = np.zeros((batch_size, seq_len, len(columns)))
+
+        for batch in range(batch_size):
+                
+            batch_start = (tensor_idx * batch_size + batch) * seq_len
+            batch_end = (tensor_idx * batch_size + batch + 1) * seq_len
+            batch_df = df.iloc[batch_start:batch_end]
+            batch_df = batch_df[columns]
+            tensor[batch] = batch_df.to_numpy()
+
+        tensors.append(torch.from_numpy(tensor))
+
+    return tensors
+
+# generate_csv_datasets("./data_conversion/2021_hourly.csv", input_len=48, target_len=12, train_split=0.8, val_split=0.1, test_split=0.1, seed=0)
+# train_target_tensors = tensors_from_csv("./data_conversion/train_target_12.csv", seq_len=1, columns=['close_price', 'volume'], batch_size=1)
+# print(len(train_target_tensors))
+# print(train_target_tensors[0].shape)
+# print(train_target_tensors[0])
 
 
