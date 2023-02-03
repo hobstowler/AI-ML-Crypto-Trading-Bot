@@ -6,7 +6,7 @@ This is a microservice for storing, retrieving and deleting training data and se
 
 ## Data Model
 
-### Model
+### Model_Info
 
 TBD
 
@@ -59,9 +59,9 @@ Entity describing a transaction that occurs during a trading session.
 
 ---
 
-## Data
+## Model_Info
 
-### Get All Data Sets
+### Get Info for Model
 
 > GET '/crypto/training_data'
 
@@ -81,6 +81,52 @@ Entity describing a transaction that occurs during a trading session.
 
 ## Sessions
 
+### Get All Sessions
+
+> GET /session
+
+#### Example Response
+
+```json
+
+```
+
+### Create New Session
+
+> POST /session
+
+### Get Session
+
+> GET /session/:session_id
+
+### Edit Session
+
+> PATCH /session/:session_id
+
+### Delete Session
+
+> DELETE /session/:session_id
+
 ---
 
 ## Transactions
+
+### Get Transactions
+
+> GET /session/:session_id/transaction
+
+### Create Transaction
+
+> POST /session/:session_id/transaction
+
+### Get Transaction
+
+> GET /session/:session_id/transaction/:transaction_id
+
+### Edit Transaction
+
+> PATCH /session/:session_id/transaction/:transaction_id
+
+### Delete Transaction
+
+> DELETE /session/:session_id/transaction/:transaction_id

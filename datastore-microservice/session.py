@@ -157,7 +157,7 @@ def delete_session(key, session):
     return '', 204
 
 
-@bp.route('/<session_id>/transactions', methods=['GET', 'POST'])
+@bp.route('/<session_id>/transaction', methods=['GET', 'POST'])
 def session_transactions(session_id: str):
     if request.method == 'POST':
         return create_transaction(request)
@@ -204,7 +204,8 @@ def get_transactions(session_id: str):
     query.add_filter('session_id', '=', session_id)
 
     results = query.fetch()
-    total = len(list(results))
+    results = list(results)
+    total = len(results)
     self = f'{request.base_url}'
     transactions = []
     for result in results:
@@ -219,7 +220,7 @@ def get_transactions(session_id: str):
     }), 200
 
 
-@bp.route('/<session_id>/transactions/<transaction_id>', methods=['GET', 'DELETE'])
+@bp.route('/<session_id>/transaction/<transaction_id>', methods=['GET', 'DELETE'])
 def transactions(session_id: str, transaction_id: str):
     key = client.key('Transaction', int(transaction_id))
     transaction = client.get(key)
@@ -233,6 +234,8 @@ def transactions(session_id: str, transaction_id: str):
 
     if request.method == 'GET':
         return get_transactions(transaction)
+    elif request.method == 'PATCH':
+        return edit_transaction(request, transaction)
     elif request.method == 'DELETE':
         return delete_transaction(key)
     else:
@@ -245,6 +248,10 @@ def get_transaction(result):
     transaction['self'] = f'{request.base_url}'
 
     return jsonify(transaction), 200
+
+
+def edit_transaction(request, transaction):
+    pass
 
 
 def delete_transaction(key):
