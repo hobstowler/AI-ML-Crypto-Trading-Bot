@@ -2,6 +2,7 @@ import pandas
 import torch
 import numpy as np
 import argparse
+import os
 from sklearn.preprocessing import MinMaxScaler
 
 def generate_start_indicies(length, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
@@ -145,6 +146,15 @@ def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
         tensors.append(torch.from_numpy(tensor))
 
     return tensors
+
+def clean_dataset_csv_files(input_len, target_len):
+    os.remove(f"data_conversion/train_input_{input_len}.csv")
+    os.remove(f"data_conversion/train_target_{target_len}.csv")
+    os.remove(f"data_conversion/val_input_{input_len}.csv")
+    os.remove(f"data_conversion/val_target_{target_len}.csv")
+    os.remove(f"data_conversion/test_input_{input_len}.csv")
+    os.remove(f"data_conversion/test_target_{target_len}.csv")
+    
 
 # generate_csv_datasets("./data_conversion/2021_hourly.csv", input_len=48, target_len=12, train_split=0.8, val_split=0.1, test_split=0.1, seed=0)
 # train_target_tensors = tensors_from_csv("./data_conversion/train_target_12.csv", seq_len=12, columns=['close_price', 'volume'], batch_size=1)
