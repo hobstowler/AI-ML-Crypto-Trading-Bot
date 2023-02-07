@@ -24,7 +24,7 @@ HIDDEN_SIZE = 10
 INPUT_SIZE = 1
 OUTPUT_SIZE = 1
 NUM_LAYERS = 1
-BATCH_SIZE = 1
+BATCH_SIZE = 4
 LR = 0.001
 
 # For data collection and analysis
@@ -55,18 +55,17 @@ class Net(nn.Module):
 
     # Initialize hidden layer as zeros
     def init_hidden(self):
-        return (torch.zeros(self.batch_size, self.num_layers, self.hidden_size), 
-                torch.zeros(self.batch_size, self.num_layers, self.hidden_size))
+        return (torch.zeros(self.num_layers, self.batch_size, self.hidden_size), 
+                torch.zeros(self.num_layers, self.batch_size, self.hidden_size))
 
     # Defines what happens when the model is run. Basically the base RNN runs, then the linear layer for output runs
     def forward(self, x, hidden_prev):
         out, hidden_prev = self.lstm(x, hidden_prev)
-        out = out.reshape(-1, self.hidden_size)
         out = self.linear(out)
         out = out.unsqueeze(dim=0)
         return out, hidden_prev
 
-model = Net(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, NUM_LAYERS)                                   # build a model instance based on class we just defined
+model = Net(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, NUM_LAYERS, BATCH_SIZE)                                   # build a model instance based on class we just defined
 criterion = nn.MSELoss()                        # Set the loss criteria as mean squared error
 optimizer = optim.Adam(model.parameters(), LR)  # This will facilitate gradient updates, Adam is a very common method
 
@@ -74,7 +73,7 @@ optimizer = optim.Adam(model.parameters(), LR)  # This will facilitate gradient 
 # Initialize hidden layer to zeros
 hidden_prev = model.init_hidden()
 
-data_tensors = tensors_from_csv('./data_conversion/train_input_48.csv', seq_len=48, columns=['close_price'], batch_size=1)
+data_tensors = tensors_from_csv('./train_input_48.csv', seq_len=48, columns=['close_price'], batch_size=BATCH_SIZE)
 
 iter = 0
 for curr_tensor in data_tensors:
