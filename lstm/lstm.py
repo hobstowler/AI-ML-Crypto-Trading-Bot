@@ -26,6 +26,7 @@ OUTPUT_SIZE = 1
 NUM_LAYERS = 1
 BATCH_SIZE = 4
 LR = 0.001
+EPOCHS = 1
 
 # For data collection and analysis
 MODEL_SAVE_POINTS = [10, 100, 500]
@@ -65,60 +66,52 @@ class Net(nn.Module):
         out = out.unsqueeze(dim=0)
         return out, hidden_prev
 
-model = Net(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, NUM_LAYERS, BATCH_SIZE)                                   # build a model instance based on class we just defined
-criterion = nn.MSELoss()                        # Set the loss criteria as mean squared error
-optimizer = optim.Adam(model.parameters(), LR)  # This will facilitate gradient updates, Adam is a very common method
+def train(model, criterion, data_tensors, optimizer, save_points):
+    # Initialize hidden layer to zeros
+    hidden_prev = model.init_hidden()
+
+    iter = 0
+    for curr_tensor in data_tensors:
+
+        curr_tensor = curr_tensor.to(torch.float32)
+
+        # Split into input and target values
+        inputs, targets = curr_tensor[:,:-1,:], curr_tensor[:,1:,:]
+        output, hidden_prev = model(inputs, hidden_prev)
+        hidden_prev = (hidden_prev[0].detach(), hidden_prev[1].detach())
+        loss = criterion(output, targets)
+        model.zero_grad()
+        loss.backward()
+
+        # Update weights based on mainly the new gradients and learning rate
+        optimizer.step()
+
+        loss_values.append(loss.item())
+
+        if iter % 1 == 0:
+            print(f'iteration: {iter}, loss {loss.item()}')
+
+        # Save a model from each checkpoint
+        if iter in save_points:
+            # check if the models folder exists and if not make it
+            if not os.path.exists('./models'):
+                os.makedirs('./models')
+            torch.save(model.state_dict(), f'./models/model_{iter}.pt')
+
+        iter += 1
+
+    plt.plot(loss_values)
+    plt.show()
 
 
-# Initialize hidden layer to zeros
-hidden_prev = model.init_hidden()
+if __name__=='__main__':
+    model = Net(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, NUM_LAYERS, BATCH_SIZE)
+    criterion = nn.MSELoss()                        # Set the loss criteria as mean squared error
+    optimizer = optim.Adam(model.parameters(), LR)  # This will facilitate gradient updates, Adam is a very common method
 
-data_tensors = tensors_from_csv('./train_input_48.csv', seq_len=48, columns=['close_price'], batch_size=BATCH_SIZE)
+    data_tensors = tensors_from_csv('./train_48.csv', seq_len=48, columns=['close_price'], batch_size=BATCH_SIZE)
 
-iter = 0
-for curr_tensor in data_tensors:
-
-    curr_tensor = curr_tensor.to(torch.float32)
-
-    # Split into input and target values
-    inputs, targets = curr_tensor[:,:-1,:], curr_tensor[:,1:,:]
-
-    # Run model forward and get predicted values
-    output, hidden_prev = model(inputs, hidden_prev)
-
-    # Save the hidden layer as it will be an input for next iteration (detach removes the new copy from the gradient update graph)
-    hidden_prev = (hidden_prev[0].detach(), hidden_prev[1].detach())
-
-    # Calculate the loss from current output compared to the target values
-    loss = criterion(output, targets)
-
-    # PyTorch thing, need to zero out the calculated gradients from the previous iteration, otherwise they accumulate
-    model.zero_grad()
-
-    # Run backpropogation and calculate new gradients
-    loss.backward()
-
-    # Update weights based on mainly the new gradients and learning rate
-    optimizer.step()
-
-    #########################################################################
-    # Everything below is just for evaluating and saving data, not actually part of model training
-    loss_values.append(loss.item())
-
-    if iter % 1 == 0:
-        print(f'iteration: {iter}, loss {loss.item()}')
-
-    # Save a model from each checkpoint
-    if iter in MODEL_SAVE_POINTS:
-        # check if the models folder exists and if not make it
-        if not os.path.exists('./models'):
-            os.makedirs('./models')
-        torch.save(model.state_dict(), f'./models/model_{iter}.pt')
-
-    iter += 1
-
-plt.plot(loss_values)
-plt.show()
+    train(model, criterion, data_tensors, optimizer, MODEL_SAVE_POINTS)
 
 
 
