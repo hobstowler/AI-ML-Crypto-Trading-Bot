@@ -1,3 +1,5 @@
+# adapted from: https://www.udemy.com/course/machine-learning-applied-to-stock-crypto-trading-python/
+
 import os
 import numpy as np
 import pandas as pd
@@ -35,6 +37,7 @@ INITIAL_ACCOUNT_BALANCE = 1000
 PERCENT_CAPITAL = 0.1
 TRADING_COSTS_RATE = 0.001
 KILL_THRESH = 0.4  # terminate if balance too low
+
 
 # Build Environment Class
 class StockTradingEnv(gym.Env):
