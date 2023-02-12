@@ -7,11 +7,11 @@ import Header from "./components/Header";
 function App() {
   return (
     <div className="App">
-      <Header/>
       <BrowserRouter>
+        <Header/>
         <Routes>
-          <Route path="/"><Home/></Route>
-          <Route path="/sessions"><Sessions/></Route>
+          <Route path="/" element={<Home/>}/>
+          <Route path="/sessions" element={<Sessions/>}/>
         </Routes>
       </BrowserRouter>
     </div>

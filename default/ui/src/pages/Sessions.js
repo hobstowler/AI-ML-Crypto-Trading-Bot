@@ -1,5 +1,8 @@
 import {useEffect, useState} from "react";
 import SessionGraph from "../components/SessionGraph";
+import SessionNavigator from "../components/SessionNavigator";
+import SessionDetail from "../components/SessionDetail";
+import TransactionList from "../components/TransactionList";
 
 export default function Sessions() {
   const [sessions, setSessions] = useState([]);
@@ -19,7 +22,12 @@ export default function Sessions() {
 
   return (
     <div>
-      <SessionGraph/>
+      <SessionNavigator/>
+      <div>
+        <SessionGraph/>
+        <TransactionList/>
+      </div>
+      <SessionDetail/>
     </div>
   )
 }
