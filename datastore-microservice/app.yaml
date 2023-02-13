@@ -1,0 +1,6 @@
+runtime: python39
+service: datastore-micro
+
+handlers:
+- url: /
+  script: auto
