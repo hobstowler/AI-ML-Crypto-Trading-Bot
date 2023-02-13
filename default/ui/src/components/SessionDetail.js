@@ -1,7 +1,7 @@
-export default function SessionDetail() {
+export default function SessionDetail(session) {
   return (
-    <div>
-
+    <div className="sessionDetail">
+      <h2>Details for {session.name ? session.name : "<null>"}</h2>
     </div>
   )
 }

@@ -1,4 +1,4 @@
-export default function SessionGraph() {
+export default function SessionGraph(session, transactions) {
   return (
     <div>
 
