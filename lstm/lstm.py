@@ -165,9 +165,6 @@ def predict(model, criterion, data_tensors, pred_len):
 
             iter += 1
 
-            print("Prediction: ", prediction)
-            print("Target: ", targets)
-
             predictions.append(prediction)
 
     return predictions
@@ -191,25 +188,76 @@ def vizualize_predictions(predictions, targets, index=0):
                 axis[row][col].scatter(x_targets, targets[index].squeeze().numpy())
                 axis[row][col].scatter(x_predictions, predictions[index].squeeze().numpy())
                 
+    plt.savefig('predictions.png')
 
     plt.show()
 
 
 
-if __name__=='__main__':
-    model = Net(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, NUM_LAYERS, BATCH_SIZE)
-    criterion = nn.MSELoss()                        # Set the loss criteria as mean squared error
-    optimizer = optim.Adam(model.parameters(), LR)  # This will facilitate gradient updates, Adam is a very common method
+def train_loop(save_points, model_name, hyperparams, data_source_info):
 
-    train_tensors = tensors_from_csv('./train_48.csv', seq_len=48, columns=['close_price'], batch_size=BATCH_SIZE)
-    val_tensors = tensors_from_csv('./val_48.csv', seq_len=48, columns=['close_price'], batch_size=BATCH_SIZE)
-    test_tensors = tensors_from_csv('./test_48.csv', seq_len=48, columns=['close_price'], batch_size=1)
+    # Unpack hyperparameters
+    input_size = hyperparams['input_size']
+    hidden_size = hyperparams['hidden_size']
+    output_size = hyperparams['output_size']
+    num_layers = hyperparams['num_layers']
+    batch_size = hyperparams['batch_size']
+    epochs = hyperparams['epochs']
+    lr = hyperparams['lr']
 
-    train(model, criterion, train_tensors, optimizer, MODEL_SAVE_POINTS)
-    validate(model, criterion, val_tensors)
-    save_model
+    # Unpack data source info
+    train_source = data_source_info['train_source']
+    val_source = data_source_info['val_source']
+    test_source = data_source_info['test_source']
+    seq_len = data_source_info['seq_len']
+    columns = data_source_info['columns']
+    
+    # Initialize model
+    model = Net(input_size=input_size, hidden_size=hidden_size, output_size=output_size, 
+                num_layers=num_layers, batch_size=batch_size)
+
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+
+    # Get data in tensor form
+    train_tensors = tensors_from_csv(train_source, seq_len=seq_len, columns=columns, batch_size=batch_size)
+    val_tensors = tensors_from_csv(val_source, seq_len=seq_len, columns=columns, batch_size=batch_size)
+    test_tensors = tensors_from_csv(test_source, seq_len=seq_len, columns=columns, batch_size=1)
+
+    # Perform training over each epoch
+    for epoch in range(epochs):
+        print(f'Epoch {epoch}')
+        train(model, criterion, train_tensors, optimizer, save_points=save_points)
+        validate(model, criterion, val_tensors)
+
+    # Make predictions on test data
     predictions = predict(model, criterion, test_tensors, 12)
     vizualize_predictions(predictions, test_tensors, 7)
+
+    save_model(model, optimizer, f'./models/model_{model_name}.pt')
+
+if __name__=='__main__':
+
+    hyperparams = {
+        'input_size': INPUT_SIZE,
+        'hidden_size': HIDDEN_SIZE,
+        'output_size': OUTPUT_SIZE,
+        'num_layers': NUM_LAYERS,
+        'batch_size': BATCH_SIZE,
+        'epochs': EPOCHS,
+        'lr': LR
+    }
+
+    data_source_info = {
+        'train_source': './train_48.csv',
+        'val_source': './val_48.csv',
+        'test_source': './test_48.csv',
+        'seq_len': 48,
+        'columns': ['close_price']
+    }
+
+    train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info)
 
 
 
