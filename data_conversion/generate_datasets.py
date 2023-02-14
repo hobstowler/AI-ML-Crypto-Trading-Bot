@@ -183,6 +183,7 @@ if __name__ == '__main__':
     args = get_arguments()
     # Call generate_csv_datasets with the cli arguments
     generate_csv_datasets(args.input_file, int(args.seq_len), float(args.train_split), 
+
                                     float(args.val_split), float(args.test_split), args.seed)
 
 
