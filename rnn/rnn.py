@@ -280,9 +280,9 @@ def main():
     model.validate(input_len=48, batch_size=BATCH_SIZE)
     
     # predictions
-    preds = model.predict(input_length=48, batch_size=BATCH_SIZE, pred_len=12)
-    targets = model.get_tensors(in_len=48, batch_sz=BATCH_SIZE, kind="test")
-    model.vizualize_predictions(predictions=preds, targets=targets, index=7)
+    # preds = model.predict(input_length=48, batch_size=BATCH_SIZE, pred_len=12)
+    # targets = model.get_tensors(in_len=48, batch_sz=BATCH_SIZE, kind="test")
+    # model.vizualize_predictions(predictions=preds, targets=targets, index=7)
 
     
     
