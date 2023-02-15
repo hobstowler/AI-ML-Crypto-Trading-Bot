@@ -7,7 +7,7 @@ bp = Blueprint('data', __name__, url_prefix='/data')
 
 @bp.route('/training_data', methods=['GET'])
 def get_all_training_data():
-    pass
+    return '', 501
 
 
 @bp.route('/training_data/<data_name>', methods=['GET', 'POST', 'DELETE'])
@@ -21,12 +21,12 @@ def training_data(data_name: str):
 
 
 def get_training_data(data_name: str):
-    pass
+    return '', 501
 
 
 def create_training_data(data_name: str):
-    pass
+    return '', 501
 
 
 def delete_training_data(data_name: str):
-    pass
+    return '', 501
