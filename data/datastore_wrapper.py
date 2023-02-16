@@ -233,7 +233,7 @@ class DatastoreWrapper():
 
 
 if __name__ == '__main__':
-    client = DatastoreWrapper('http://localhost:2522')
+    client = DatastoreWrapper('https://datastore-micro-dot-ai-ml-bitcoin-bot.uw.r.appspot.com/')
     sessions = client.get_all_sessions()
     print(sessions)
     session_id = sessions[0]['id']
