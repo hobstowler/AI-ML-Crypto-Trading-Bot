@@ -123,21 +123,6 @@ def edit_session(request, session):
 
     for key, value in json.items():
         session.update({key: value})
-    """session.update({
-        'session_name': json['session_name'] if 'session_name' in json else None,
-        'type': json['type'] if 'type' in json else None,
-        'model_name': json['model_name'] if 'model_name' in json else None,
-        'session_start': json['session_start'] if 'session_start' in json else None,
-        'session_end': json['session_end'] if 'session_end' in json else None,
-        'starting_balance': json['starting_balance'] if 'starting_balance' in json else None,
-        'ending_balance': json['ending_balance'] if 'ending_balance' in json else None,
-        'starting_coins': json['starting_coins'] if 'starting_coins' in json else None,
-        'ending_coins': json['ending_coins'] if 'ending_coins' in json else None,
-        'coins_sold': json['coins_sold'] if 'coins_sold' in json else None,
-        'coins_bought': json['coins_bought'] if 'coins_bought' in json else None,
-        'number_of_trades': json['number_of_trades'] if 'number_of_trades' in json else None,
-        'crypto_type': json['crypto_type'] if 'crypto_type' in json else None,
-    })"""
     client.put(session)
 
     res = dict(session)
@@ -160,19 +145,17 @@ def delete_session(key, session):
 @bp.route('/<session_id>/transaction', methods=['GET', 'POST'])
 def session_transactions(session_id: str):
     if request.method == 'POST':
-        return create_transaction(request)
+        return create_transaction(request, session_id)
     elif request.method == 'GET':
         return get_transactions(session_id)
     else:
-        return 'Not found: invalid request method.', 404
+        return 'Not found: invalid request method.', 501
 
 
-def create_transaction(request):
-    json = request.json()
+def create_transaction(request, session_id):
+    json = request.get_json()
     try:
-        session_id = json['session_id']
         transaction_type = json['type']
-        crypto_type = json['crypto_type']
         amount = json['amount']
         value = json['value']
     except KeyError:
@@ -184,14 +167,8 @@ def create_transaction(request):
         trans_dt_tm = datetime.utcnow().strftime('%m/%d/%Y, %H:%M:%S')
 
     transaction = datastore.Entity(client.key('Transaction'))
-    transaction.update({
-        'session_id': session_id,
-        'type': transaction_type,
-        'crypto_type': crypto_type,
-        'amount': amount,
-        'value': value,
-        'transaction_date_time': trans_dt_tm
-    })
+    for key, value in json.items():
+        transaction.update({key: value})
     client.put(transaction)
     res = dict(transaction)
     res['id'] = transaction.id
@@ -200,7 +177,7 @@ def create_transaction(request):
 
 
 def get_transactions(session_id: str):
-    query = client.query(kind='Trade')
+    query = client.query(kind='Transaction')
     query.add_filter('session_id', '=', session_id)
 
     results = query.fetch()
@@ -220,20 +197,16 @@ def get_transactions(session_id: str):
     }), 200
 
 
-@bp.route('/<session_id>/transaction/<transaction_id>', methods=['GET', 'DELETE'])
+@bp.route('/<session_id>/transaction/<transaction_id>', methods=['GET', 'PATCH', 'DELETE'])
 def transactions(session_id: str, transaction_id: str):
     key = client.key('Transaction', int(transaction_id))
     transaction = client.get(key)
-    #query = client.query(kind='Transaction')
-    #query.add_filter('session_id', '=', session_id)
-    #query.add_filter('transaction_id', '=', transaction_id)
-    #transaction = query.fetch()
 
-    if not transaction or transaction['session_id'] != session_id:
+    if not transaction or transaction['session_id'] != int(session_id):
         return jsonify({"error": "Transaction not found with that transaction id and/or session id."}), 404
 
     if request.method == 'GET':
-        return get_transactions(transaction)
+        return get_transaction(transaction)
     elif request.method == 'PATCH':
         return edit_transaction(request, transaction)
     elif request.method == 'DELETE':
@@ -251,7 +224,16 @@ def get_transaction(result):
 
 
 def edit_transaction(request, transaction):
-    pass
+    json = request.get_json()
+
+    for key, value in json.items():
+        transaction.update({key: value})
+    client.put(transaction)
+
+    res = dict(transaction)
+    res['id'] = transaction.id
+    res['self'] = f'{request.base_url}{transaction.id}'
+    return jsonify(res), 200
 
 
 def delete_transaction(key):
