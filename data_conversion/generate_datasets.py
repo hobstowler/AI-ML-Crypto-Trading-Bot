@@ -2,6 +2,7 @@ import pandas
 import torch
 import numpy as np
 import argparse
+import os
 from sklearn.preprocessing import MinMaxScaler
 
 def get_arguments():
@@ -177,6 +178,16 @@ def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
 
     return tensors
 
+
+def clean_dataset_csv_files(input_len, target_len):
+    os.remove(f"data_conversion/train_input_{input_len}.csv")
+    os.remove(f"data_conversion/train_target_{target_len}.csv")
+    os.remove(f"data_conversion/val_input_{input_len}.csv")
+    os.remove(f"data_conversion/val_target_{target_len}.csv")
+    os.remove(f"data_conversion/test_input_{input_len}.csv")
+    os.remove(f"data_conversion/test_target_{target_len}.csv")
+    
+    
 if __name__ == '__main__':
 
     # Get arguments from the command line
@@ -185,6 +196,3 @@ if __name__ == '__main__':
     generate_csv_datasets(args.input_file, int(args.seq_len), float(args.train_split), 
 
                                     float(args.val_split), float(args.test_split), args.seed)
-
-
-
