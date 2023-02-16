@@ -5,15 +5,49 @@ import argparse
 import os
 from sklearn.preprocessing import MinMaxScaler
 
-def generate_start_indicies(length, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
+def get_arguments():
     '''
-    All this function does is caculate where the start indicies of each set are. 
-    It does the train/val/test split and shuffles the start indicies.
+    Function that collects cli arguments.
     '''
+    parser = argparse.ArgumentParser(description = 'Generate a csv with dataset info')
+    parser.add_argument('--input_file', help='Required. Input file to generate datasets from')
+    parser.add_argument('--input_len', help='Required. Length of the input sequences')
+    parser.add_argument('--target_len', help='Required. Length of the target sequences')
+    parser.add_argument('--train_split', help='Optional. Percentage of data to use for training', default=0.8)
+    parser.add_argument('--val_split', help='Optional. Percentage of data to use for validation', default=0.1)
+    parser.add_argument('--test_split', help='Optional. Percentage of data to use for testing', default=0.1)
+    parser.add_argument('--seed', help='Optional. Seed for random number generator', default=None)
+    args = parser.parse_args()
 
+    return args
+
+def generate_start_indicies(length, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
+    """
+    Function that generates indicies for splitting data into train, val, and test sets. Does not do the actual 
+    splitting, just generates the indicies.
+
+    Args:
+        length (int): Total length of the data to be processed.
+        input_len (int): Length of the input sequences.
+        target_len (int): Length of the target sequences.
+        train_split (float, optional): Percentage of data to use for training. Defaults to 0.8.
+        val_split (float, optional): Percentage of data to use for validation. Defaults to 0.1.
+        test_split (float, optional): Percentage of data to use for testing. Defaults to 0.1.
+        seed (int, optional): Seed value for random shuffling. Use to make consistent data sets. Defaults to None.
+
+    Raises:
+        ValueError: train_split + val_split + test_split must equal 1
+        ValueError: length must be greater than input_len + target_len
+
+    Returns:
+        tuple: tuple containing following lists: (training start indicies, validation start indicies, testing start indicies)
+    """
+
+    # Error checking on splits
     if abs((train_split + val_split + test_split) - 1.0) > 0.0001:
         raise ValueError("train_split + val_split + test_split must equal 1")
 
+    # Error check on target and input length
     if length < input_len + target_len:
         raise ValueError("length must be greater than input_len + target_len")
     
@@ -42,12 +76,14 @@ def generate_start_indicies(length, input_len, target_len, train_split=0.8, val_
 def generate_full_indicies(length, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
     '''
     Takes the start indicies and fills in the rest of the index values for each set for a given input or target length.
+    Is not called directly by the user.
     '''
 
     train_indicies_start, val_indicies_start, test_indicies_start = generate_start_indicies(length, input_len, target_len, train_split, val_split, test_split, seed)
 
     all_indicies = {}
 
+    # Build arrays to hold indicies
     all_indicies['train_inputs'] = np.array([], dtype=np.int64)
     all_indicies['train_targets'] = np.array([], dtype=np.int64)
     all_indicies['val_inputs'] = np.array([], dtype=np.int64)
@@ -55,14 +91,17 @@ def generate_full_indicies(length, input_len, target_len, train_split=0.8, val_s
     all_indicies['test_inputs'] = np.array([], dtype=np.int64)
     all_indicies['test_targets'] = np.array([], dtype=np.int64)
 
+    # Fill in training indicies
     for value in train_indicies_start:
         all_indicies['train_inputs'] = np.append(all_indicies['train_inputs'], np.arange(value, value + input_len))
         all_indicies['train_targets'] = np.append(all_indicies['train_targets'], np.arange(value + input_len, value + input_len + target_len))
 
+    # Fill in validation indicies
     for value in val_indicies_start:
         all_indicies['val_inputs'] = np.append(all_indicies['val_inputs'], np.arange(value, value + input_len))
         all_indicies['val_targets'] = np.append(all_indicies['val_targets'], np.arange(value + input_len, value + input_len + target_len))
 
+    # Fill in testing indicies
     for value in test_indicies_start:
         all_indicies['test_inputs'] = np.append(all_indicies['test_inputs'], np.arange(value, value + input_len))
         all_indicies['test_targets'] = np.append(all_indicies['test_targets'], np.arange(value + input_len, value + input_len + target_len))
@@ -71,7 +110,7 @@ def generate_full_indicies(length, input_len, target_len, train_split=0.8, val_s
 
 def normalize_data(df):
     '''
-    Normalize every column that is a number type in the dataframe
+    Normalize every column that is a number type in the dataframe.
     '''
 
     # Generate list of dataframe columns whos type is a number
@@ -86,9 +125,18 @@ def normalize_data(df):
     return df
 
 def generate_csv_datasets(input_file, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
-    '''
-    Makes the train, val, and test datasets from the input file and returns them as csv files.
-    '''
+    """
+    Generates the train, val and test datasets as normalized values for a csv file.
+
+    Args:
+        input_file (str): Path to the input csv file.
+        input_len (int): Length of the input sequences.
+        target_len (int): Length of the target sequences.
+        train_split (float, optional): Percentage of data to use for training. Defaults to 0.8.
+        val_split (float, optional): Percentage of data to use for validation. Defaults to 0.1.
+        test_split (float, optional): Percentage of data to use for testing. Defaults to 0.1.
+        seed (int, optional): Seed value for random shuffling. Use to make consistent data sets. Defaults to None.
+    """
 
     # Read in the input file
     df = pandas.read_csv(input_file)
@@ -108,20 +156,24 @@ def generate_csv_datasets(input_file, input_len, target_len, train_split=0.8, va
     test_input_df = df.iloc[all_indicies['test_inputs']]
     test_target_df = df.iloc[all_indicies['test_targets']]
 
-    folder_name='data_conversion'
-
     # Write the datasets to files
-    train_input_df.to_csv(f"./{folder_name}/train_input_{input_len}.csv", index=False)
-    train_target_df.to_csv(f"./{folder_name}/train_target_{target_len}.csv", index=False)
-    val_input_df.to_csv(f"./{folder_name}/val_input_{input_len}.csv", index=False)
-    val_target_df.to_csv(f"./{folder_name}/val_target_{target_len}.csv", index=False)
-    test_input_df.to_csv(f"./{folder_name}/test_input_{input_len}.csv", index=False)
-    test_target_df.to_csv(f"./{folder_name}/test_target_{target_len}.csv", index=False)
+    train_input_df.to_csv(f"./train_input_{input_len}.csv", index=False)
+    train_target_df.to_csv(f"./train_target_{target_len}.csv", index=False)
+    val_input_df.to_csv(f"./val_input_{input_len}.csv", index=False)
+    val_target_df.to_csv(f"./val_target_{target_len}.csv", index=False)
+    test_input_df.to_csv(f"./test_input_{input_len}.csv", index=False)
+    test_target_df.to_csv(f"./test_target_{target_len}.csv", index=False)
 
 def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
-    '''
-    Makes pytorch tensors of shape (batch_size, seq_len, num_features) from a dataframe.
-    '''
+    """
+    Generates pytorch tensors from a csv file with the given sequence length and columns.
+
+    Args:
+        infile (str): Path to the input csv file.
+        seq_len (int): Length of the sequences in the input file.
+        columns (list): List of columns to use in the input file.
+        batch_size (int, optional): Size of the batches to build. Defaults to 1.
+    """
 
     # Read in the input file
     df = pandas.read_csv(infile)
@@ -147,6 +199,7 @@ def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
 
     return tensors
 
+
 def clean_dataset_csv_files(input_len, target_len):
     os.remove(f"data_conversion/train_input_{input_len}.csv")
     os.remove(f"data_conversion/train_target_{target_len}.csv")
@@ -155,9 +208,11 @@ def clean_dataset_csv_files(input_len, target_len):
     os.remove(f"data_conversion/test_input_{input_len}.csv")
     os.remove(f"data_conversion/test_target_{target_len}.csv")
     
+    
+if __name__ == '__main__':
 
-# generate_csv_datasets("./data_conversion/2021_hourly.csv", input_len=48, target_len=12, train_split=0.8, val_split=0.1, test_split=0.1, seed=0)
-# train_target_tensors = tensors_from_csv("./data_conversion/train_target_12.csv", seq_len=12, columns=['close_price', 'volume'], batch_size=1)
-# print(len(train_target_tensors))
-# print(train_target_tensors[0].shape)
-# print(train_target_tensors[0])
+    # Get arguments from the command line
+    args = get_arguments()
+    # Call generate_csv_datasets with the cli arguments
+    generate_csv_datasets(args.input_file, int(args.input_len), int(args.target_len), float(args.train_split), 
+                                    float(args.val_split), float(args.test_split), args.seed)
