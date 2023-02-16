@@ -127,3 +127,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Tyler's gitignore settings
+.vim
+.venv
+.DS_Store

@@ -1,0 +1,5 @@
+﻿input_size,hidden_size,output_size,num_layers,batch_size,epochs,lr
+1,10,1,1,2,10,0.001
+1,20,1,1,2,10,0.001
+1,40,1,1,2,10,0.001
+1,160,1,1,2,10,0.001
