@@ -30,25 +30,13 @@ df = df.replace(np.inf, np.nan)
 df = df.dropna()
 df = df.reset_index(drop=True)
 
-
-# ##################################################################
-# ###  TRADING PARAMETERS
-# ##################################################################
-MAX_OPEN_POSITIONS = 3
+# Initialize Variables
+MAX_INT = 2147483647
+MAX_OPEN_POSITIONS = 1
 INITIAL_ACCOUNT_BALANCE = 1000
-PERCENT_CAPITAL = 0.05
-TRADING_COSTS_RATE = 0.001  # cost to execute a trade. will be multiplied by the number of open positions
-KILL_THRESH = 0.4  # terminate if balance too low. Acts as a percentage of initial net worth
-
-# ##################################################################
-# ###  HYPER PARAMETERS
-# ##################################################################
-N = 20
-batch_size = 5
-n_epochs = 8
-n_episodes = 200
-alpha = 0.0003  # learning rate
-
+PERCENT_CAPITAL = 0.1
+TRADING_COSTS_RATE = 0.001
+KILL_THRESH = 0.4  # terminate if balance too low
 
 
 # Build Environment Class
@@ -229,6 +217,43 @@ class StockTradingEnv(gym.Env):
     def render(self, mode='human', close=False):
         profit = self.net_worth - INITIAL_ACCOUNT_BALANCE
         return profit
+
+
+def test_actions():
+    # Test the Environment
+    env = StockTradingEnv(df)
+    actions = [0, 1, 2]
+    observation = env.reset()
+    print(f'Initial Observation: {env.reset()}')
+    for action in actions:
+        obs_, reward, done, info = env.step(action)
+
+        print("")
+        print(f'Action Taken {action}')
+        print(f'Reward Received: {reward}')
+        print(f'Next State: {obs_}')
+        print(f'Completed: {done}')
+        print('--------------------------')
+        print(f'Available Balance: {env.available_balance}')
+        print(f'Net Worth: {env.net_worth}')
+        print(f'Realized Profit: {env.realized_profit}')
+        print(f'Unrealized Profit: {env.unrealized_profit}')
+        print(f'Open Quantities: {env.open_quantities}')
+        print(f'Open Prices: {env.open_prices}')
+        print(f'Trading Costs: {env.trading_costs}')
+        print(f'Open Positions: {env.open_positions}')
+        print(f'Incorrect Calls: {env.incorrect_position_calls}')
+        print('--------------------------')
+
+
+def plot_learning_curve(x, scores, figure_file):
+    running_avg = np.zeros(len(scores))
+    for i in range(len(running_avg)):
+        running_avg[i] = np.mean(scores[max(0, i - 50): (i + 1)])
+    plt.plot(x, running_avg)
+    plt.title('Running average of previous 50 scores')
+    plt.savefig(figure_file)
+    plt.show()
 
 
 class PPOMemory:
@@ -423,39 +448,67 @@ class Agent:
         self.memory.clear_memory()
 
 
+def test_agent():
+    env = StockTradingEnv(df)
+    batch_size = 5
+    n_epochs = 4
+    alpha = 0.0003
+    agent = Agent(n_actions=env.action_space.n, batch_size=batch_size,
+                  alpha=alpha, n_epochs=n_epochs,
+                  input_dims=env.observation_space.shape)
+    observation = env.reset()
+    action, prob, val = agent.choose_action(observation)
+    n_actions = env.action_space.n
+    print("Oberservation: ", observation)
+    print("Number of Actions: ", n_actions)
+    print("Action Chosen: ", action)
+    print("Probability of Action: ", prob)
+    print("Value of Action: ", val)
+    observation_, reward, done, info = env.step(action)
+    print("Next Oberservation", observation_)
+    print("Reward", reward)
+    print("Done", done)
+    print("Info", info)
+
+
 def load_model(type: str, path: str) -> nn.Module:
     model = ActorNetwork()
     return model
 
 
 if __name__ == '__main__':
-
-
     env = StockTradingEnv(df)
+    N = 20
+    batch_size = 5
+    n_epochs = 8
+    alpha = 0.0003
     agent = Agent(n_actions=env.action_space.n, batch_size=batch_size, alpha=alpha,
                   n_epochs=n_epochs, input_dims=env.observation_space.shape)
+
+    if os.exists(f'{os.getcwd()}\\tmp\\actor_torch_ppo_sine') and \
+        os.exists(f'{os.getcwd()}\\tmp\\critic_torch_ppo_sine'):
+        agent.load_models()
+
+    n_games = 20
 
     figure_file = "sinewave.png"
     best_score = env.reward_range[0]
     score_history = []
     profit_history = []
     net_worth_history = []
-    step_history = []
     learn_iters = 0
     avg_score = 0
     n_steps = 0
 
     print('...starting...')
-    for i in range(n_episodes):
+    for i in range(n_games):
         observation = env.reset()
         done = False
         score = 0
-        e_steps = 0
         while not done:
             action, prob, val = agent.choose_action(observation)
             observation_, reward, done, info = env.step(action)
             n_steps += 1
-            e_steps += 1
             score += reward
             agent.remember(observation, action, prob, val, reward, done)
             if n_steps % N == 0:
@@ -467,21 +520,19 @@ if __name__ == '__main__':
         score_history.append(score)
         profit_history.append(env.unrealized_profit + env.realized_profit)
         net_worth_history.append(env.net_worth)
-        step_history.append(e_steps)
         avg_score = np.mean(score_history[-50:])
 
         if avg_score > best_score and i > 10:
             best_score = avg_score
             agent.save_models()
 
-        print(f"episode: {i}, score: {score:.2f}, avg score: {avg_score:.2f}, time_steps (current/total): {e_steps}/{n_steps}, learning steps: {learn_iters}")
+        print(f"episide: {i}, score: {score:.2f}, avg score: {avg_score:.2f}, time_steps: {n_steps}, learning steps: {learn_iters}")
 
     x = [i+1 for i in range(len(score_history))]
-    plt.plot(x, score_history, label='score')
-    plt.plot(x, step_history, label='steps')
+    #plot_learning_curve(x, score_history, figure_file)
+    #plt.plot(x, score_history, label='score')
     plt.plot(x, profit_history, label='profit')
     plt.plot(x, net_worth_history, label='net worth')
-    plt.yscale("linear")
     plt.legend(loc='best')
     plt.show()
 
