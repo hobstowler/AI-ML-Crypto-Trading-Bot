@@ -11,19 +11,37 @@ from gym import spaces
 import random
 
 
+# Create timesteps
+time = np.arange(0, 50, 0.1)
+
+# Assign Amplitude and normalize above 0
+amplitude = np.sin(time)
+amplitude = amplitude + 1
+max_amp = max(amplitude)
+amplitude = amplitude / max_amp
+
+# Construct DataFrame
+df = pd.DataFrame(amplitude)
+df.columns = ['Close']
+df['Close_Rt'] = df['Close'].pct_change()
+df = df.replace(np.inf, np.nan)
+df = df.dropna()
+df = df.reset_index(drop=True)
+
+
 # ##################################################################
 # ###  TRADING PARAMETERS
 # ##################################################################
 MAX_OPEN_POSITIONS = 3
 INITIAL_ACCOUNT_BALANCE = 1000
-PERCENT_CAPITAL = 0.1
+PERCENT_CAPITAL = 0.05
 TRADING_COSTS_RATE = 0.001  # cost to execute a trade. will be multiplied by the number of open positions
 KILL_THRESH = 0.4  # terminate if balance too low. Acts as a percentage of initial net worth
 
 # ##################################################################
 # ###  HYPER PARAMETERS
 # ##################################################################
-#N = 20
+N = 20
 batch_size = 5
 n_epochs = 8
 n_episodes = 200
@@ -408,22 +426,7 @@ def load_model(type: str, path: str) -> nn.Module:
 
 
 if __name__ == '__main__':
-    # Create timesteps
-    time = np.arange(0, 500, 0.1)
 
-    # Assign Amplitude and normalize above 0
-    amplitude = np.sin(time)
-    amplitude = amplitude + 1
-    max_amp = max(amplitude)
-    amplitude = amplitude / max_amp
-
-    # Construct DataFrame
-    df = pd.DataFrame(amplitude)
-    df.columns = ['Close']
-    df['Close_Rt'] = df['Close'].pct_change()
-    df = df.replace(np.inf, np.nan)
-    df = df.dropna()
-    df = df.reset_index(drop=True)
 
     env = StockTradingEnv(df)
     agent = Agent(n_actions=env.action_space.n, batch_size=batch_size, alpha=alpha,
