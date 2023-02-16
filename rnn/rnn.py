@@ -99,17 +99,17 @@ class Net(nn.Module):
     def set_batch_size(self, value: int):
         self.batch_size = value
 
-    def generate_dataset(self, in_len, target_len):
-        generate_csv_datasets("training_data/2021.csv", input_len=in_len, target_len=target_len)
+    def generate_dataset(self, sequence_length):
+        generate_csv_datasets("../training_data/2021.csv", seq_len=sequence_length)
         
-    def clean_dataset_csvs(self, input_len, target_len):
-        clean_dataset_csv_files(input_len, target_len)
+    def clean_dataset_csvs(self, sequence_length):
+        clean_dataset_csv_files(sequence_length)
 
-    def get_tensors(self, in_len, batch_sz, kind: str="train"):
+    def get_tensors(self, sequence_length, batch_sz, kind: str="train"):
         tensors = None
         try:
             tensors = tensors_from_csv(
-            f"data_conversion/{kind}_input_{in_len}.csv", 
+            f"{kind}_{sequence_length}.csv", 
             seq_len=48, 
             columns=[
                 "open_price", "high_price", "low_price", "close_price", "volume", 
@@ -122,14 +122,14 @@ class Net(nn.Module):
             pass
         return tensors
 
-    def train(self, epochs, lr, optimizer, criterion, input_len=48, target_len=12):
+    def train(self, epochs, lr, optimizer, criterion, sequence_length=48):
         
         self.init_training(optimizer=optimizer, criterion=criterion, loss_reduction=lr)
         i = 0
         for epoch in range(epochs):
             
-            self.generate_dataset(in_len=input_len, target_len=target_len)
-            train_tensors = self.get_tensors(input_len, batch_sz=self.batch_size, kind="train")
+            self.generate_dataset(sequence_length=sequence_length)
+            train_tensors = self.get_tensors(sequence_length, batch_sz=self.batch_size, kind="train")
 
             # Initialize hidden layer to zeros
             hidden_prev = self.init_hidden()
@@ -162,11 +162,11 @@ class Net(nn.Module):
         plt.plot(self.loss_values)
         plt.show()
     
-    def validate(self, input_len, batch_size):
+    def validate(self, sequence_length, batch_size):
         # Initialize hidden layer to zeros
         hidden_prev = self.init_hidden()
 
-        data_tensors = self.get_tensors(in_len=input_len, batch_sz=batch_size, kind="val")
+        data_tensors = self.get_tensors(sequence_length=sequence_length, batch_sz=batch_size, kind="val")
 
         iter = 0
         with torch.no_grad():
@@ -187,12 +187,12 @@ class Net(nn.Module):
 
                 iter += 1
     
-    def predict(self, input_length, batch_size, pred_len):
+    def predict(self, sequence_length, batch_size, pred_len):
         # Initialize hidden layer to zeros
 
         self.set_batch_size(1)
 
-        data_tensors = self.get_tensors(in_len=input_length, batch_sz=batch_size, kind="test")
+        data_tensors = self.get_tensors(sequence_length=sequence_length, batch_sz=batch_size, kind="test")
 
         iter = 0
         predictions = []
@@ -272,17 +272,18 @@ def main():
         lr=LR,
         optimizer=optim.Adam(model.parameters(), LR),
         criterion=nn.MSELoss(),
-        input_len=48,
-        target_len=12
+        sequence_length=48,
     )
 
     # validate model
-    model.validate(input_len=48, batch_size=BATCH_SIZE)
+    model.validate(sequence_length=48, batch_size=BATCH_SIZE)
     
     # predictions
-    # preds = model.predict(input_length=48, batch_size=BATCH_SIZE, pred_len=12)
-    # targets = model.get_tensors(in_len=48, batch_sz=BATCH_SIZE, kind="test")
+    # preds = model.predict(sequence_length=48, batch_size=BATCH_SIZE, pred_len=12)
+    # targets = model.get_tensors(sequence_length=48, batch_sz=BATCH_SIZE, kind="test")
     # model.vizualize_predictions(predictions=preds, targets=targets, index=7)
+
+    model.clean_dataset_csvs(48)
 
     
     
