@@ -10,8 +10,7 @@ def get_arguments():
     '''
     parser = argparse.ArgumentParser(description = 'Generate a csv with dataset info')
     parser.add_argument('--input_file', help='Required. Input file to generate datasets from')
-    parser.add_argument('--input_len', help='Required. Length of the input sequences')
-    parser.add_argument('--target_len', help='Required. Length of the target sequences')
+    parser.add_argument('--seq_len', help='Required. Length of individual sequences')
     parser.add_argument('--train_split', help='Optional. Percentage of data to use for training', default=0.8)
     parser.add_argument('--val_split', help='Optional. Percentage of data to use for validation', default=0.1)
     parser.add_argument('--test_split', help='Optional. Percentage of data to use for testing', default=0.1)
@@ -20,15 +19,14 @@ def get_arguments():
 
     return args
 
-def generate_start_indicies(length, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
+def generate_start_indicies(total_len, seq_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
     """
     Function that generates indicies for splitting data into train, val, and test sets. Does not do the actual 
     splitting, just generates the indicies.
 
     Args:
         length (int): Total length of the data to be processed.
-        input_len (int): Length of the input sequences.
-        target_len (int): Length of the target sequences.
+        seq_len (int): Length of the individual sequences.
         train_split (float, optional): Percentage of data to use for training. Defaults to 0.8.
         val_split (float, optional): Percentage of data to use for validation. Defaults to 0.1.
         test_split (float, optional): Percentage of data to use for testing. Defaults to 0.1.
@@ -46,14 +44,8 @@ def generate_start_indicies(length, input_len, target_len, train_split=0.8, val_
     if abs((train_split + val_split + test_split) - 1.0) > 0.0001:
         raise ValueError("train_split + val_split + test_split must equal 1")
 
-    # Error check on target and input length
-    if length < input_len + target_len:
-        raise ValueError("length must be greater than input_len + target_len")
-    
-    set_length = input_len + target_len
-
     # Note: This will ignore the last set if it is not a full set
-    num_sets = length // set_length
+    num_sets = total_len // seq_len
 
     if seed is not None:
         np.random.seed(seed)
@@ -66,44 +58,38 @@ def generate_start_indicies(length, input_len, target_len, train_split=0.8, val_
     val_start = int(train_split * num_sets)
     test_start = val_start + int(val_split * num_sets)
 
-    train_indicies = np.multiply(shuffle_list[train_start:val_start], set_length)
-    val_indicies = np.multiply(shuffle_list[val_start:test_start], set_length)
-    test_indicies = np.multiply(shuffle_list[test_start:], set_length)
+    train_indicies = np.multiply(shuffle_list[train_start:val_start], seq_len)
+    val_indicies = np.multiply(shuffle_list[val_start:test_start], seq_len)
+    test_indicies = np.multiply(shuffle_list[test_start:], seq_len)
 
     return train_indicies, val_indicies, test_indicies
 
-def generate_full_indicies(length, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
+def generate_full_indicies(total_len, seq_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
     '''
     Takes the start indicies and fills in the rest of the index values for each set for a given input or target length.
     Is not called directly by the user.
     '''
 
-    train_indicies_start, val_indicies_start, test_indicies_start = generate_start_indicies(length, input_len, target_len, train_split, val_split, test_split, seed)
+    train_indicies_start, val_indicies_start, test_indicies_start = generate_start_indicies(total_len, seq_len, train_split, val_split, test_split, seed)
 
     all_indicies = {}
 
     # Build arrays to hold indicies
-    all_indicies['train_inputs'] = np.array([], dtype=np.int64)
-    all_indicies['train_targets'] = np.array([], dtype=np.int64)
-    all_indicies['val_inputs'] = np.array([], dtype=np.int64)
-    all_indicies['val_targets'] = np.array([], dtype=np.int64)
-    all_indicies['test_inputs'] = np.array([], dtype=np.int64)
-    all_indicies['test_targets'] = np.array([], dtype=np.int64)
+    all_indicies['train_indicies'] = np.array([], dtype=np.int64)
+    all_indicies['val_indicies'] = np.array([], dtype=np.int64)
+    all_indicies['test_indicies'] = np.array([], dtype=np.int64)
 
     # Fill in training indicies
     for value in train_indicies_start:
-        all_indicies['train_inputs'] = np.append(all_indicies['train_inputs'], np.arange(value, value + input_len))
-        all_indicies['train_targets'] = np.append(all_indicies['train_targets'], np.arange(value + input_len, value + input_len + target_len))
+        all_indicies['train_indicies'] = np.append(all_indicies['train_indicies'], np.arange(value, value + seq_len))
 
     # Fill in validation indicies
     for value in val_indicies_start:
-        all_indicies['val_inputs'] = np.append(all_indicies['val_inputs'], np.arange(value, value + input_len))
-        all_indicies['val_targets'] = np.append(all_indicies['val_targets'], np.arange(value + input_len, value + input_len + target_len))
+        all_indicies['val_indicies'] = np.append(all_indicies['val_indicies'], np.arange(value, value + seq_len))
 
     # Fill in testing indicies
     for value in test_indicies_start:
-        all_indicies['test_inputs'] = np.append(all_indicies['test_inputs'], np.arange(value, value + input_len))
-        all_indicies['test_targets'] = np.append(all_indicies['test_targets'], np.arange(value + input_len, value + input_len + target_len))
+        all_indicies['test_indicies'] = np.append(all_indicies['test_indicies'], np.arange(value, value + seq_len))
 
     return all_indicies
 
@@ -123,14 +109,13 @@ def normalize_data(df):
     df[number_columns] = scaler.fit_transform(df[number_columns])
     return df
 
-def generate_csv_datasets(input_file, input_len, target_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
+def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
     """
     Generates the train, val and test datasets as normalized values for a csv file.
 
     Args:
         input_file (str): Path to the input csv file.
-        input_len (int): Length of the input sequences.
-        target_len (int): Length of the target sequences.
+        seq_len (int): Length of the individual sequences.
         train_split (float, optional): Percentage of data to use for training. Defaults to 0.8.
         val_split (float, optional): Percentage of data to use for validation. Defaults to 0.1.
         test_split (float, optional): Percentage of data to use for testing. Defaults to 0.1.
@@ -143,25 +128,19 @@ def generate_csv_datasets(input_file, input_len, target_len, train_split=0.8, va
     # Normalize the data
     df = normalize_data(df)
 
-    all_indicies = generate_full_indicies(len(df), input_len, target_len, train_split, val_split, test_split, seed)
+    all_indicies = generate_full_indicies(len(df), seq_len, train_split, val_split, test_split, seed)
 
     # Create the train, val, and test datasets
-    train_input_df = df.iloc[all_indicies['train_inputs']]
-    train_target_df = df.iloc[all_indicies['train_targets']]
+    train_df = df.iloc[all_indicies['train_indicies']]
 
-    val_input_df = df.iloc[all_indicies['val_inputs']]
-    val_target_df = df.iloc[all_indicies['val_targets']]
+    val_df = df.iloc[all_indicies['val_indicies']]
 
-    test_input_df = df.iloc[all_indicies['test_inputs']]
-    test_target_df = df.iloc[all_indicies['test_targets']]
+    test_df = df.iloc[all_indicies['test_indicies']]
 
     # Write the datasets to files
-    train_input_df.to_csv(f"./train_input_{input_len}.csv", index=False)
-    train_target_df.to_csv(f"./train_target_{target_len}.csv", index=False)
-    val_input_df.to_csv(f"./val_input_{input_len}.csv", index=False)
-    val_target_df.to_csv(f"./val_target_{target_len}.csv", index=False)
-    test_input_df.to_csv(f"./test_input_{input_len}.csv", index=False)
-    test_target_df.to_csv(f"./test_target_{target_len}.csv", index=False)
+    train_df.to_csv(f"./train_{seq_len}.csv", index=False)
+    val_df.to_csv(f"./val_{seq_len}.csv", index=False)
+    test_df.to_csv(f"./test_input_{seq_len}.csv", index=False)
 
 def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
     """
@@ -203,7 +182,8 @@ if __name__ == '__main__':
     # Get arguments from the command line
     args = get_arguments()
     # Call generate_csv_datasets with the cli arguments
-    generate_csv_datasets(args.input_file, int(args.input_len), int(args.target_len), float(args.train_split), 
+    generate_csv_datasets(args.input_file, int(args.seq_len), float(args.train_split), 
+
                                     float(args.val_split), float(args.test_split), args.seed)
 
 
