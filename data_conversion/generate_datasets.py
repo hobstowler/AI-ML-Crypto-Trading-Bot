@@ -141,7 +141,7 @@ def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, t
     # Write the datasets to files
     train_df.to_csv(f"./train_{seq_len}.csv", index=False)
     val_df.to_csv(f"./val_{seq_len}.csv", index=False)
-    test_df.to_csv(f"./test_input_{seq_len}.csv", index=False)
+    test_df.to_csv(f"./test_{seq_len}.csv", index=False)
 
 def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
     """
@@ -179,13 +179,10 @@ def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
     return tensors
 
 
-def clean_dataset_csv_files(input_len, target_len):
-    os.remove(f"data_conversion/train_input_{input_len}.csv")
-    os.remove(f"data_conversion/train_target_{target_len}.csv")
-    os.remove(f"data_conversion/val_input_{input_len}.csv")
-    os.remove(f"data_conversion/val_target_{target_len}.csv")
-    os.remove(f"data_conversion/test_input_{input_len}.csv")
-    os.remove(f"data_conversion/test_target_{target_len}.csv")
+def clean_dataset_csv_files(seq_len):
+    os.remove(f"./train_{seq_len}.csv")
+    os.remove(f"./val_{seq_len}.csv")
+    os.remove(f"./test_{seq_len}.csv")
     
     
 if __name__ == '__main__':
