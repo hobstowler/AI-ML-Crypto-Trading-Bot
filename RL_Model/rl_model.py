@@ -32,24 +32,6 @@ n_episodes = 200
 alpha = 0.0003  # learning rate
 
 
-# Create timesteps
-time = np.arange(0, 50, 0.1)
-
-# Assign Amplitude and normalize above 0
-amplitude = np.sin(time)
-amplitude = amplitude + 1
-max_amp = max(amplitude)
-amplitude = amplitude / max_amp
-
-# Construct DataFrame
-df = pd.DataFrame(amplitude)
-df.columns = ['Close']
-df['Close_Rt'] = df['Close'].pct_change()
-df = df.replace(np.inf, np.nan)
-df = df.dropna()
-df = df.reset_index(drop=True)
-
-
 # Build Environment Class
 class StockTradingEnv(gym.Env):
     """ A stock trading environment with Open AI gym"""
@@ -89,7 +71,7 @@ class StockTradingEnv(gym.Env):
         self.observation_space = spaces.Box(low=-1, high=1, shape=(8,), dtype=np.float32)
 
     # Reward Structure
-    def _calculate_reward(self):
+    def _calculate_reward(self) -> int:
         reward = 0
         if self.num_trades:
             reward += self.realized_profit / self.num_trades
@@ -434,8 +416,8 @@ if __name__ == '__main__':
     agent = Agent(n_actions=env.action_space.n, batch_size=batch_size, alpha=alpha,
                   n_epochs=n_epochs, input_dims=env.observation_space.shape)
 
-    if os.path.exists(f'{os.getcwd()}\\tmp\\actor_torch_ppo_sine') and \
-        os.path.exists(f'{os.getcwd()}\\tmp\\critic_torch_ppo_sine'):
+    if os.exists(f'{os.getcwd()}\\tmp\\actor_torch_ppo_sine') and \
+        os.exists(f'{os.getcwd()}\\tmp\\critic_torch_ppo_sine'):
         agent.load_models()
 
     figure_file = "sinewave.png"
