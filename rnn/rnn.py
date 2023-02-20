@@ -29,7 +29,7 @@ OUTPUT_SIZE = 10
 NUM_LAYERS = 1
 BATCH_SIZE = 1 
 LR = 1e-5
-EPOCHS = 10
+EPOCHS = 50
 
 
 class Net(nn.Module):
@@ -100,7 +100,8 @@ class Net(nn.Module):
         self.batch_size = value
 
     def generate_dataset(self, sequence_length):
-        generate_csv_datasets("../training_data/2021.csv", seq_len=sequence_length)
+        generate_csv_datasets("../training_data/2021.csv", 
+                              seq_len=sequence_length)
         
     def clean_dataset_csvs(self, sequence_length):
         clean_dataset_csv_files(sequence_length)
@@ -112,8 +113,8 @@ class Net(nn.Module):
             f"{kind}_{sequence_length}.csv", 
             seq_len=48, 
             columns=[
-                "open_price", "high_price", "low_price", "close_price", "volume", 
-                "close_time", "quote_asset_volume","qty_transactions", 
+                "open_price", "high_price", "low_price", "close_price", 
+                "volume", "close_time", "quote_asset_volume","qty_transactions", 
                 "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume"
             ], 
             batch_size=batch_sz
@@ -124,12 +125,15 @@ class Net(nn.Module):
 
     def train(self, epochs, lr, optimizer, criterion, sequence_length=48):
         
-        self.init_training(optimizer=optimizer, criterion=criterion, loss_reduction=lr)
+        self.init_training(optimizer=optimizer, criterion=criterion, 
+                           loss_reduction=lr)
         i = 0
         for epoch in range(epochs):
             
             self.generate_dataset(sequence_length=sequence_length)
-            train_tensors = self.get_tensors(sequence_length, batch_sz=self.batch_size, kind="train")
+            train_tensors = self.get_tensors(sequence_length, 
+                                            batch_sz=self.batch_size, 
+                                            kind="train")
 
             # Initialize hidden layer to zeros
             hidden_prev = self.init_hidden()
@@ -166,7 +170,11 @@ class Net(nn.Module):
         # Initialize hidden layer to zeros
         hidden_prev = self.init_hidden()
 
-        data_tensors = self.get_tensors(sequence_length=sequence_length, batch_sz=batch_size, kind="val")
+        data_tensors = self.get_tensors(sequence_length=sequence_length, 
+                                        batch_sz=batch_size, kind="val")
+        
+        preds = []
+        preds_targets = []
 
         iter = 0
         with torch.no_grad():
@@ -176,8 +184,10 @@ class Net(nn.Module):
 
                 # Split into input and target values
                 inputs, targets = curr_tensor[:,:-1,:], curr_tensor[:,1:,:]
+                preds_targets.append(targets)
                 output, hidden_prev = self(inputs, hidden_prev)
                 hidden_prev = hidden_prev.detach()
+                preds.append(output)
                 loss = self.get_criterion()(output, targets)
 
                 self.loss_values.append(loss.item())
@@ -186,13 +196,31 @@ class Net(nn.Module):
                     print(f'iteration: {iter}, validation loss {loss.item()}')
 
                 iter += 1
+
+        pred_x = []
+        pred_y = []
+        
+        for tensor in preds:
+            tensor_list = tensor.squeeze().tolist()
+            for pred in tensor_list:
+                pred_x.append(pred[0])
+        for tensor in preds_targets:
+            tensor_list = tensor.squeeze().tolist()
+            for pred in tensor_list:
+                pred_y.append(pred[0])
+        plt.plot(pred_x, 'b')
+        plt.plot(pred_y, 'y')
+        plt.show()
+
+        
     
     def predict(self, sequence_length, batch_size, pred_len):
         # Initialize hidden layer to zeros
 
         self.set_batch_size(1)
 
-        data_tensors = self.get_tensors(sequence_length=sequence_length, batch_sz=batch_size, kind="test")
+        data_tensors = self.get_tensors(sequence_length=sequence_length, 
+                                        batch_sz=batch_size, kind="test")
 
         iter = 0
         predictions = []
@@ -205,7 +233,8 @@ class Net(nn.Module):
                 split_point = len(curr_tensor[0]) - pred_len
 
                 # Split into input and target values
-                inputs, targets = curr_tensor[:,:split_point,:], curr_tensor[:,split_point:,:]
+                inputs = curr_tensor[:, :split_point, :] 
+                targets = curr_tensor[:, split_point:, :]
                 # Run through the inputs to build up the hidden state
                 output, hidden_prev = self(inputs, hidden_prev)
             
@@ -213,7 +242,8 @@ class Net(nn.Module):
                 # Make predictions for each value in the target
                 for i in range(pred_len):
                     # Use the last output as the next input
-                    output, hidden_prev = self(output[:,-1,:].unsqueeze(1), hidden_prev)
+                    output, hidden_prev = self(output[:,-1,:].unsqueeze(1), 
+                                               hidden_prev)
                     prediction[:,i,:] = output
 
                 loss = self.get_criterion()(prediction, targets)
@@ -236,20 +266,25 @@ class Net(nn.Module):
 
         grid_rows = int(np.ceil(np.sqrt(len(predictions))))
         grid_cols = int(np.ceil(len(predictions)/grid_rows))
-    
 
         figure, axis = plt.subplots(grid_rows, grid_cols)
 
         for row in range(grid_rows):
             for col in range(grid_cols):
-                index = row*grid_cols + col
+                index = (row * grid_cols) + col
                 if index < len(predictions):
-                    x_targets = np.arange(0,len(targets[0].squeeze().numpy()))
-                    start_point = len(targets[0].squeeze().numpy()) - len(predictions[index].squeeze().numpy())
+                    x_targets = np.arange(0, len(targets[0].squeeze().numpy()))
+                    start_point = len(targets[0].squeeze().numpy())\
+                                - len(predictions[index].squeeze().numpy())
                     x_predictions = np.arange(start_point, len(x_targets))
-
-                    axis[row][col].scatter(x_targets, targets[index].squeeze().numpy())
-                    axis[row][col].scatter(x_predictions, predictions[index].squeeze().numpy())
+                    
+                    # print("x_targets\n", x_targets)
+                    # print("targets[index]\n", targets[index].squeeze().numpy())
+                    # return
+                    axis[row][col].scatter(
+                        x_targets, targets[index].squeeze().numpy())
+                    axis[row][col].scatter(
+                        x_predictions, predictions[index].squeeze().numpy())
                 
 
         plt.show()
@@ -279,9 +314,12 @@ def main():
     model.validate(sequence_length=48, batch_size=BATCH_SIZE)
     
     # predictions
-    # preds = model.predict(sequence_length=48, batch_size=BATCH_SIZE, pred_len=12)
-    # targets = model.get_tensors(sequence_length=48, batch_sz=BATCH_SIZE, kind="test")
-    # model.vizualize_predictions(predictions=preds, targets=targets, index=7)
+    # preds = model.predict(
+    #     sequence_length=48, batch_size=BATCH_SIZE, pred_len=12)
+    # targets = model.get_tensors(
+    #     sequence_length=48, batch_sz=BATCH_SIZE, kind="test")
+    # model.vizualize_predictions(
+    #     predictions=preds, targets=targets, index=7)
 
     model.clean_dataset_csvs(48)
 
