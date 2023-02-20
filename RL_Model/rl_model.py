@@ -10,6 +10,7 @@ import torch.optim as optim
 from torch.distributions.categorical import Categorical
 import gym
 from gym import spaces
+from rl_data_prep import RLDataPrepper
 import random
 
 
@@ -28,7 +29,7 @@ KILL_THRESH = 0.4  # terminate if balance too low. Acts as a percentage of initi
 N = 20
 batch_size = 5
 n_epochs = 10
-n_episodes = 200
+n_episodes = 10
 alpha = 0.0003  # learning rate
 
 
@@ -68,7 +69,7 @@ class StockTradingEnv(gym.Env):
         self.action_space = spaces.Discrete(3)
 
         # Set up observation space
-        self.observation_space = spaces.Box(low=-1, high=1, shape=(8,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-1, high=1, shape=(16,), dtype=np.float32)
 
     # Reward Structure
     def _calculate_reward(self) -> int:
@@ -85,17 +86,26 @@ class StockTradingEnv(gym.Env):
     # Observation Structure
     def _next_observation(self):
         close_item = self.df.loc[self.current_step, 'Close'].item()
-        close_rt_item = self.df.loc[self.current_step, 'Close_Rt'].item()
-        close_T1_item = self.df.loc[self.current_step - 1, 'Close_Rt'].item()
-        close_T2_item = self.df.loc[self.current_step - 2, 'Close_Rt'].item()
-        close_T3_item = self.df.loc[self.current_step - 3, 'Close_Rt'].item()
-        close_T4_item = self.df.loc[self.current_step - 4, 'Close_Rt'].item()
+        close_rt_item = self.df.loc[self.current_step, 'Close Rt'].item()
+        close_T1_item = self.df.loc[self.current_step - 1, 'Close Rt'].item()
+        close_T2_item = self.df.loc[self.current_step - 2, 'Close Rt'].item()
+        close_T3_item = self.df.loc[self.current_step - 3, 'Close Rt'].item()
+        close_T4_item = self.df.loc[self.current_step - 4, 'Close Rt'].item()
+        sma30 = self.df.loc[self.current_step - 4, 'SMA30'].item()
+        ema30 = self.df.loc[self.current_step - 4, 'EMA30'].item()
+        cma = self.df.loc[self.current_step - 4, 'CMA'].item()
+        bollinger_upper = self.df.loc[self.current_step - 4, 'bollinger_upper'].item()
+        bollinger_lower = self.df.loc[self.current_step - 4, 'bollinger_lower'].item()
+        macd = self.df.loc[self.current_step - 4, 'macd'].item()
+        signal = self.df.loc[self.current_step - 4, 'signal'].item()
+        rs = self.df.loc[self.current_step - 4, 'rs'].item()
 
         current_position = 1 if self.open_positions else 0
         num_trades = self.num_trades / len(self.df) if self.num_trades > 0 else 0
 
         obs = np.array([close_item, close_rt_item, close_T1_item, close_T2_item,
-                        close_T3_item, close_T4_item, current_position, num_trades])
+                        close_T3_item, close_T4_item, sma30, ema30, cma, bollinger_lower,
+                        bollinger_upper, macd, signal, rs, current_position, num_trades])
 
         return obs
 
@@ -410,14 +420,15 @@ def load_model(type: str, path: str) -> nn.Module:
 
 
 if __name__ == '__main__':
-
+    data_prepper = RLDataPrepper('../data/all_2017-01-01-2022-12-31_1m.csv', '1m')
+    df = data_prepper.do_it_all()
 
     env = StockTradingEnv(df)
     agent = Agent(n_actions=env.action_space.n, batch_size=batch_size, alpha=alpha,
                   n_epochs=n_epochs, input_dims=env.observation_space.shape)
 
-    if os.exists(f'{os.getcwd()}\\tmp\\actor_torch_ppo_sine') and \
-        os.exists(f'{os.getcwd()}\\tmp\\critic_torch_ppo_sine'):
+    if os.path.exists(f'{os.getcwd()}\\tmp\\actor_torch_ppo_sine') and \
+        os.path.exists(f'{os.getcwd()}\\tmp\\critic_torch_ppo_sine'):
         agent.load_models()
 
     figure_file = "sinewave.png"
@@ -437,6 +448,7 @@ if __name__ == '__main__':
         score = 0
         e_steps = 0
         while not done:
+            print(f'\r{e_steps}/{env.max_steps}', end='')
             action, prob, val = agent.choose_action(observation)
             observation_, reward, done, info = env.step(action)
             n_steps += 1
@@ -447,6 +459,7 @@ if __name__ == '__main__':
                 agent.learn()
                 learn_iters += 1
             observation = observation_
+        print('\r', end='')
 
         # Save history
         score_history.append(score)
