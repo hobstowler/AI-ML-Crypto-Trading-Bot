@@ -1,5 +1,5 @@
 from binance.client import Client
-from binance_keys import BinanceKeys
+from binance_api.binance_keys import BinanceKeys
 import datetime
 import pandas 
 

@@ -7,6 +7,7 @@ import os
 import sys
 import matplotlib.pyplot as plt
 import numpy as np
+import datetime
 
 # data handling
 from torch.utils.data.sampler import SubsetRandomSampler
@@ -18,6 +19,7 @@ sys.path.append(parent_dir)
 from data_conversion.generate_datasets import tensors_from_csv
 from data_conversion.generate_datasets import generate_csv_datasets
 from data_conversion.generate_datasets import clean_dataset_csv_files
+from binance_api import binance_api
 
 
 # CONSTANTS
@@ -123,7 +125,7 @@ class Net(nn.Module):
             pass
         return tensors
 
-    def train(self, epochs, lr, optimizer, criterion, sequence_length=48):
+    def _train(self, epochs, lr, optimizer, criterion, sequence_length=48):
         
         self.init_training(optimizer=optimizer, criterion=criterion, 
                            loss_reduction=lr)
@@ -212,7 +214,6 @@ class Net(nn.Module):
         plt.plot(pred_y, 'y')
         plt.show()
 
-        
     
     def predict(self, sequence_length, batch_size, pred_len):
         # Initialize hidden layer to zeros
@@ -262,32 +263,57 @@ class Net(nn.Module):
 
         return predictions
 
-    def vizualize_predictions(self, predictions, targets, index=0):
+    def save(self):
+        current_time = str(datetime.datetime.now())
+        torch.save(self.state_dict(), f"./saved_rnn_models/{current_time}")
 
-        grid_rows = int(np.ceil(np.sqrt(len(predictions))))
-        grid_cols = int(np.ceil(len(predictions)/grid_rows))
+    def load(self, path_to_rnn_model):
+        self.load_state_dict(torch.load(path_to_rnn_model))
+        self.eval()
 
-        figure, axis = plt.subplots(grid_rows, grid_cols)
+    def get_next_open_price(self, qty_past_candles, ):
+        
+        # get most recent times
+        today = datetime.datetime.now()
+        yesterday = today - datetime.timedelta(days=1)
+        yesterday = datetime.datetime.strftime(yesterday, "%Y-%m-%d")
+        today = datetime.datetime.strftime(today, "%Y-%m-%d")
+        
+        # get data from binance
+        binance = binance_api.BinanceAPI()
+        data = binance.get_candlestick_dataframe(
+            ticker_symbol="BTCUSDT",
+            start_time=yesterday,
+            end_time=today,
+            time_inteval_in_minutes=60)
+        data_len = len(data)
 
-        for row in range(grid_rows):
-            for col in range(grid_cols):
-                index = (row * grid_cols) + col
-                if index < len(predictions):
-                    x_targets = np.arange(0, len(targets[0].squeeze().numpy()))
-                    start_point = len(targets[0].squeeze().numpy())\
-                                - len(predictions[index].squeeze().numpy())
-                    x_predictions = np.arange(start_point, len(x_targets))
-                    
-                    # print("x_targets\n", x_targets)
-                    # print("targets[index]\n", targets[index].squeeze().numpy())
-                    # return
-                    axis[row][col].scatter(
-                        x_targets, targets[index].squeeze().numpy())
-                    axis[row][col].scatter(
-                        x_predictions, predictions[index].squeeze().numpy())
-                
-
-        plt.show()
+        # convert data to tensors
+        current_time = str(datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f"))
+        data_filepath = f"./data-{current_time}"
+        binance.export_candlestick_dataframe_csv(
+            pandas_dataframe=data,
+            csv_filepath=data_filepath)
+        tensors = tensors_from_csv(infile=data_filepath, seq_len=data_len,
+                                   columns=[
+                                        "open_price", "high_price", "low_price", 
+                                        "close_price", "volume", "close_time", 
+                                        "quote_asset_volume","qty_transactions", 
+                                        "taker_buy_base_asset_volume", 
+                                        "taker_buy_quote_asset_volume"
+                                   ])
+        
+        # delete data csv
+        os.remove(data_filepath)
+        
+        # run model
+        hidden_prev = self.init_hidden()
+        for tensor in tensors:
+            tensor = tensor.to(torch.float32)
+            output, hidden_prev = self(tensor, hidden_prev)
+            hidden_prev = hidden_prev.detach()
+        
+        return output[0, -1, 0].tolist()
 
 
 def main():
@@ -302,7 +328,7 @@ def main():
     )
 
     # train model
-    model.train(
+    model._train(
         epochs=EPOCHS, 
         lr=LR,
         optimizer=optim.Adam(model.parameters(), LR),
@@ -312,15 +338,10 @@ def main():
 
     # validate model
     model.validate(sequence_length=48, batch_size=BATCH_SIZE)
-    
-    # predictions
-    # preds = model.predict(
-    #     sequence_length=48, batch_size=BATCH_SIZE, pred_len=12)
-    # targets = model.get_tensors(
-    #     sequence_length=48, batch_sz=BATCH_SIZE, kind="test")
-    # model.vizualize_predictions(
-    #     predictions=preds, targets=targets, index=7)
 
+    # save model
+    model.save()
+    
     model.clean_dataset_csvs(48)
 
     
