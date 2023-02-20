@@ -219,13 +219,29 @@ def train_loop(save_points, model_name, hyperparams, data_source_info, plot=Fals
 
     save_model(model, optimizer, f'./models/model_{model_name}.pt')
 
-def train_from_csv(infile):
+    results = {}
+    results['train_loss'] = train_losses
+    results['val_loss'] = val_losses
+    results['test_loss'] = pred_losses
+
+    return results
+
+def train_from_csv(infile, outfile):
     """
     Loop through a csv file and perform training on each set of hyperparameters
     """
 
     # Read in csv file
     df = pd.read_csv(infile)
+
+    # Make list of epochs from max value in csv
+    epochs = list(range(1, int(df['epochs'].max()) + 1))
+
+    # Make the column list
+    columns = ['type'] + df.columns.values.tolist() + epochs
+
+    # Make output dataframe
+    out_df = pd.DataFrame(columns=columns)
 
     # For each set of supplied hyperparameters perform training
     for idx in range(len(df)):
@@ -251,7 +267,20 @@ def train_from_csv(infile):
             'columns': ['close_price']
         }
     
-        train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=False)
+        results = train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=False)
+        
+        types = ['train', 'val', 'test']
+
+        for i in range(len(types)):
+            out_df.loc[idx * 3 + i, 'type'] = types[i]
+            for key, value in hyperparams.items():
+                out_df.loc[idx * 3 + i, key] = value
+
+            for epoch, loss in enumerate(results[f'{types[i]}_loss']):
+                out_df.loc[idx * 3 + i, epoch + 1] = loss
+
+    # Save output dataframe to csv
+    out_df.to_csv(outfile)
 
 
 
@@ -259,25 +288,27 @@ if __name__=='__main__':
 
     # Initialize hyperparameters and data source and perform one training loop
 
-    hyperparams = {
-        'input_size': INPUT_SIZE,
-        'hidden_size': HIDDEN_SIZE,
-        'output_size': OUTPUT_SIZE,
-        'num_layers': NUM_LAYERS,
-        'batch_size': BATCH_SIZE,
-        'epochs': EPOCHS,
-        'lr': LR
-    }
+    # hyperparams = {
+    #     'input_size': INPUT_SIZE,
+    #     'hidden_size': HIDDEN_SIZE,
+    #     'output_size': OUTPUT_SIZE,
+    #     'num_layers': NUM_LAYERS,
+    #     'batch_size': BATCH_SIZE,
+    #     'epochs': EPOCHS,
+    #     'lr': LR
+    # }
 
-    data_source_info = {
-        'train_source': './train_48.csv',
-        'val_source': './val_48.csv',
-        'test_source': './test_48.csv',
-        'seq_len': 48,
-        'columns': ['close_price']
-    }
+    # data_source_info = {
+    #     'train_source': './train_48.csv',
+    #     'val_source': './val_48.csv',
+    #     'test_source': './test_48.csv',
+    #     'seq_len': 48,
+    #     'columns': ['close_price']
+    # }
 
-    train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=True)
+    # train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=True)
+
+    train_from_csv(infile='./hyperparams.csv', outfile='./results.csv')
 
 
 
