@@ -75,7 +75,7 @@ def predict(model, criterion, data_tensors, pred_len):
 
     return predictions, total_loss / iter
 
-def vizualize_predictions(predictions, targets):
+def vizualize_predictions(predictions, targets, feature_idx=0):
     """
     Generate plots from the predictions and targets for display.
     """
@@ -92,12 +92,15 @@ def vizualize_predictions(predictions, targets):
         for col in range(grid_cols):
             index = row*grid_cols + col
             if index < len(predictions):
+                # Build the x-values for targets
                 x_targets = np.arange(0,len(targets[0].squeeze().numpy()))
+
+                # Build the x-values for predictions
                 start_point = len(targets[0].squeeze().numpy()) - len(predictions[index].squeeze().numpy())
                 x_predictions = np.arange(start_point, len(x_targets))
 
-                axis[row][col].scatter(x_targets, targets[index].squeeze().numpy())
-                axis[row][col].scatter(x_predictions, predictions[index].squeeze().numpy())
+                axis[row][col].scatter(x_targets, targets[index].squeeze().numpy()[:,feature_idx])
+                axis[row][col].scatter(x_predictions, predictions[index].squeeze().numpy()[:,feature_idx])
                 
     plt.savefig('predictions.png')
 

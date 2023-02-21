@@ -32,8 +32,9 @@ LR = 0.001
 EPOCHS = 10
 
 # Data hyperparameters
-INPUT_SIZE = 1
-OUTPUT_SIZE = 1
+FEATURES = ['close_price', 'volume']
+INPUT_SIZE = len(FEATURES)
+OUTPUT_SIZE = len(FEATURES)
 
 # For data collection and analysis
 MODEL_SAVE_POINTS = [10, 100, 500]
@@ -158,10 +159,11 @@ def train_loop(save_points, model_name, hyperparams, data_source_info, plot=Fals
     Train with the specified hyperparameters over the given number of epochs
     """
 
+    input_size=INPUT_SIZE
+    output_size=OUTPUT_SIZE
+
     # Unpack hyperparameters
-    input_size = hyperparams['input_size']
     hidden_size = hyperparams['hidden_size']
-    output_size = hyperparams['output_size']
     num_layers = hyperparams['num_layers']
     batch_size = hyperparams['batch_size']
     epochs = hyperparams['epochs']
@@ -226,7 +228,7 @@ def train_loop(save_points, model_name, hyperparams, data_source_info, plot=Fals
 
     return results
 
-def train_from_csv(infile, outfile):
+def train_from_csv(infile, outfile, features = FEATURES):
     """
     Loop through a csv file and perform training on each set of hyperparameters
     """
@@ -250,9 +252,7 @@ def train_from_csv(infile, outfile):
 
         hyperparams = {}
         # Unpack hyperparameters
-        hyperparams['input_size'] = df.loc[idx, 'input_size']
         hyperparams['hidden_size'] = df.loc[idx, 'hidden_size']
-        hyperparams['output_size'] = df.loc[idx, 'output_size']
         hyperparams['num_layers'] = df.loc[idx, 'num_layers']
         hyperparams['batch_size'] = df.loc[idx, 'batch_size']
         hyperparams['epochs'] = df.loc[idx, 'epochs']
@@ -264,10 +264,10 @@ def train_from_csv(infile, outfile):
             'val_source': './val_48.csv',
             'test_source': './test_48.csv',
             'seq_len': 48,
-            'columns': ['close_price']
+            'columns': features
         }
     
-        results = train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=False)
+        results = train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=True)
         
         types = ['train', 'val', 'test']
 
