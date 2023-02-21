@@ -315,7 +315,7 @@ class Net(nn.Module):
             output, hidden_prev = self(tensor, hidden_prev)
             hidden_prev = hidden_prev.detach()
         
-        return output[0, -1, 0].tolist()
+        return output[-1, -1, 0].tolist()
 
 
 def main():
@@ -346,7 +346,7 @@ def main():
     
     model.clean_dataset_csvs(48)
     
-    print(model.get_next_open_price())
+    print("Next open price: " + model.get_next_open_price())
 
     
     
