@@ -271,7 +271,7 @@ class Net(nn.Module):
         self.load_state_dict(torch.load(path_to_rnn_model))
         self.eval()
 
-    def get_next_open_price(self, qty_past_candles, ):
+    def get_next_open_price(self):
         
         # get most recent times
         today = datetime.datetime.now()
@@ -294,14 +294,16 @@ class Net(nn.Module):
         binance.export_candlestick_dataframe_csv(
             pandas_dataframe=data,
             csv_filepath=data_filepath)
-        tensors = tensors_from_csv(infile=data_filepath, seq_len=data_len,
-                                   columns=[
-                                        "open_price", "high_price", "low_price", 
-                                        "close_price", "volume", "close_time", 
-                                        "quote_asset_volume","qty_transactions", 
-                                        "taker_buy_base_asset_volume", 
-                                        "taker_buy_quote_asset_volume"
-                                   ])
+        tensors = tensors_from_csv(
+            infile=data_filepath, 
+            seq_len=data_len,
+            columns=[
+                "open_price", "high_price", "low_price", 
+                "close_price", "volume", "close_time", 
+                "quote_asset_volume","qty_transactions", 
+                "taker_buy_base_asset_volume", 
+                "taker_buy_quote_asset_volume"
+            ])
         
         # delete data csv
         os.remove(data_filepath)
@@ -343,6 +345,8 @@ def main():
     model.save()
     
     model.clean_dataset_csvs(48)
+    
+    print(model.get_next_open_price())
 
     
     
