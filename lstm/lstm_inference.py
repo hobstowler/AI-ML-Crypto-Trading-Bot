@@ -2,16 +2,14 @@ from model_tools import *
 from lstm import LSTM
 import torch
 
-def lstm_inference(hyperparams, model_path, data_info, pred_len):
+def run_lstm_inference(hyperparams, model_path, data_info, pred_len):
 
-    # Unpack hyperparameters
+    # Unpack hyperparameters and data source info
     input_size = hyperparams['input_size']
     hidden_size = hyperparams['hidden_size']
     output_size = hyperparams['output_size']
     num_layers = hyperparams['num_layers']
     batch_size = hyperparams['batch_size']
-
-    # Unpack data source info
     inference_source = data_info['inference_source']
     seq_len = data_info['seq_len']
     columns = data_info['columns']
@@ -24,9 +22,6 @@ def lstm_inference(hyperparams, model_path, data_info, pred_len):
     # Get data in tensor form
     inference_tensor = tensors_from_csv(inference_source, seq_len=seq_len, columns=columns, batch_size=1)
 
-    print("Inference input", inference_tensor[0])
-
-
     # Initialize hidden layer to zeros
     hidden_prev = model.init_hidden()
 
@@ -34,7 +29,7 @@ def lstm_inference(hyperparams, model_path, data_info, pred_len):
     batch_size = model.batch_size
     model.set_batch_size(1)
 
-    # Load the data
+    # Load the data from first example only
     input = inference_tensor[0].to(torch.float32)
 
     # Run through the inputs to build up the hidden state
@@ -50,9 +45,28 @@ def lstm_inference(hyperparams, model_path, data_info, pred_len):
     # Restore batch size to original value
     model.set_batch_size(batch_size)
 
-    return prediction
+    return input, prediction
 
+def trade_decision(input, prediction, threshold=0.05, idx=0):
+    """
+    Generate a trade decision based on the input and prediction.
+    """
+    # Get the last value of the input and prediction
+    input_last = input[0,-1,idx]
+    pred_last = prediction[0,-1,idx]
 
+    # Calculate the percentage difference between the input and prediction
+    percent_diff = (pred_last - input_last) / input_last
+
+    # If the prediction is greater than the input, buy
+    if percent_diff > threshold:
+        return 1
+    # If the prediction is less than the input, sell
+    elif percent_diff < -threshold:
+        return -1
+    # Otherwise, hold
+    else:
+        return 0
 
 
 if __name__ == '__main__':
@@ -75,6 +89,11 @@ if __name__ == '__main__':
 
     model_path = './models/model_test_1.pt'
 
-    predictions = lstm_inference(hyperparams, model_path, data_info, pred_len=6)
+    input, predictions = run_lstm_inference(hyperparams, model_path, data_info, pred_len=6)
 
+    print("Inference input", input)
     print("Inference output", predictions)
+
+    trade = trade_decision(input, predictions, idx=0)
+
+    print("Trade decision", trade)
