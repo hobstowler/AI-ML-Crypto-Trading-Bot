@@ -41,11 +41,11 @@ MODEL_SAVE_POINTS = [10, 100, 500]
 loss_values = []
 
 
-class Net(nn.Module):
+class LSTM(nn.Module):
     """LSTM neural network architecture.
     """
     def __init__(self, input_size=1, hidden_size=10, output_size=1, num_layers=1, batch_size=1):
-        super(Net, self).__init__()
+        super(LSTM, self).__init__()
 
         self.input_size=input_size
         self.hidden_size=hidden_size
@@ -147,9 +147,6 @@ def validate(model, criterion, data_tensors):
 
             total_loss += loss.item()
 
-            #if iter % 1000 == 0:
-            #    print(f'iteration: {iter}, validation loss {loss.item()}')
-
             iter += 1
     
     return total_loss / iter
@@ -177,7 +174,7 @@ def train_loop(save_points, model_name, hyperparams, data_source_info, plot=Fals
     columns = data_source_info['columns']
     
     # Initialize model
-    model = Net(input_size=input_size, hidden_size=hidden_size, output_size=output_size, 
+    model = LSTM(input_size=input_size, hidden_size=hidden_size, output_size=output_size, 
                 num_layers=num_layers, batch_size=batch_size)
 
     criterion = nn.MSELoss()
@@ -267,7 +264,7 @@ def train_from_csv(infile, outfile, features = FEATURES):
             'columns': features
         }
     
-        results = train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=True)
+        results = train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=False)
         
         types = ['train', 'val', 'test']
 
@@ -308,7 +305,9 @@ if __name__=='__main__':
 
     # train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=True)
 
-    train_from_csv(infile='./hyperparams.csv', outfile='./results.csv')
+    #train_from_csv(infile='./hyperparams.csv', outfile='./results.csv')
+
+    predictions = inference('./models/model_test_1.pt', './test_48.csv', 3)
 
 
 

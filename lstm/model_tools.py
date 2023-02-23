@@ -8,6 +8,14 @@ import os
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
+
+
+# Add parent directory to path so we can import from data_conversion
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)
+from data_conversion.generate_datasets import tensors_from_csv
 
 def save_model(model, optimizer, save_path):
     """
@@ -73,7 +81,7 @@ def predict(model, criterion, data_tensors, pred_len):
     # Restore batch size to original value
     model.set_batch_size(batch_size)
 
-    return predictions, total_loss / iter
+    return predictions, (total_loss / iter)
 
 def vizualize_predictions(predictions, targets, feature_idx=0):
     """
@@ -105,3 +113,13 @@ def vizualize_predictions(predictions, targets, feature_idx=0):
     plt.savefig('predictions.png')
 
     plt.show()
+
+def initialize_model(model, load_path):
+    """
+    Initialize a model from a saved checkpoint
+    """
+    checkpoint = torch.load(load_path)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model.eval()
+
+    return model
