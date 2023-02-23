@@ -79,85 +79,13 @@ class LSTM(nn.Module):
         self.batch_size = batch_size
 
 
-def train(model, criterion, data_tensors, optimizer, save_points):
-    """
-    Perform training over one epoch of data.
-    """
-
-    # Initialize hidden layer to zeros
-    hidden_prev = model.init_hidden()
-
-    total_loss = 0 
-    iter = 0
-    for curr_tensor in data_tensors:
-
-        curr_tensor = curr_tensor.to(torch.float32)
-
-        # Split into input and target values
-        inputs, targets = curr_tensor[:,:-1,:], curr_tensor[:,1:,:]
-        output, hidden_prev = model(inputs, hidden_prev)
-        hidden_prev = (hidden_prev[0].detach(), hidden_prev[1].detach())
-        loss = criterion(output, targets)
-        model.zero_grad()
-        loss.backward()
-
-        # Update weights based on mainly the new gradients and learning rate
-        optimizer.step()
-
-        loss_values.append(loss.item())
-
-        total_loss += loss.item()
-
-        #if iter % 1000 == 0:
-        #    print(f'iteration: {iter}, training loss {loss.item()}')
-
-        # Save a model from each checkpoint
-        if iter in save_points:
-            save_model(model, optimizer, f'./models/model_{iter}.pt')
-
-        iter += 1
-
-    #plt.plot(loss_values)
-    #plt.show()
-
-    return total_loss / iter
-
-def validate(model, criterion, data_tensors):
-    """
-    Perform validation over one epoch of data.
-    """
-
-    # Initialize hidden layer to zeros
-    hidden_prev = model.init_hidden()
-
-    total_loss = 0
-    iter = 0
-    with torch.no_grad():
-        for curr_tensor in data_tensors:
-
-            curr_tensor = curr_tensor.to(torch.float32)
-
-            # Split into input and target values
-            inputs, targets = curr_tensor[:,:-1,:], curr_tensor[:,1:,:]
-            output, hidden_prev = model(inputs, hidden_prev)
-            hidden_prev = (hidden_prev[0].detach(), hidden_prev[1].detach())
-            loss = criterion(output, targets)
-
-            loss_values.append(loss.item())
-
-            total_loss += loss.item()
-
-            iter += 1
-    
-    return total_loss / iter
-
 def train_loop(save_points, model_name, hyperparams, data_source_info, plot=False):
     """
     Train with the specified hyperparameters over the given number of epochs
     """
 
-    input_size=INPUT_SIZE
-    output_size=OUTPUT_SIZE
+    input_size = len(data_source_info['columns'])
+    output_size = input_size
 
     # Unpack hyperparameters
     hidden_size = hyperparams['hidden_size']
@@ -180,7 +108,6 @@ def train_loop(save_points, model_name, hyperparams, data_source_info, plot=Fals
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-
     # Get data in tensor form
     train_tensors = tensors_from_csv(train_source, seq_len=seq_len, columns=columns, batch_size=batch_size)
     val_tensors = tensors_from_csv(val_source, seq_len=seq_len, columns=columns, batch_size=batch_size)
@@ -192,8 +119,8 @@ def train_loop(save_points, model_name, hyperparams, data_source_info, plot=Fals
 
     # Perform training over each epoch
     for epoch in range(epochs):
-        train_loss = train(model, criterion, train_tensors, optimizer, save_points=save_points)
-        val_loss = validate(model, criterion, val_tensors)
+        train_loss = train_lstm(model, criterion, train_tensors, optimizer, save_points=save_points)
+        val_loss = validate_lstm(model, criterion, val_tensors)
         _, pred_loss = predict(model, criterion, test_tensors, pred_len=6)
 
         print(f'Epoch {epoch}: training loss {train_loss} | val loss {val_loss} | pred loss {pred_loss}')
@@ -305,9 +232,8 @@ if __name__=='__main__':
 
     # train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=True)
 
-    #train_from_csv(infile='./hyperparams.csv', outfile='./results.csv')
+    train_from_csv(infile='./hyperparams.csv', outfile='./results.csv')
 
-    predictions = inference('./models/model_test_1.pt', './test_48.csv', 3)
 
 
 

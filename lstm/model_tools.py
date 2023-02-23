@@ -71,9 +71,6 @@ def predict(model, criterion, data_tensors, pred_len):
             loss_values.append(loss.item())
             total_loss += loss.item()
 
-            #if iter % 1 == 1000:
-            #    print(f'iteration: {iter}, prediction loss {loss.item()}')
-
             iter += 1
 
             predictions.append(prediction)
@@ -123,3 +120,65 @@ def initialize_model(model, load_path):
     model.eval()
 
     return model
+
+def train_lstm(model, criterion, data_tensors, optimizer, save_points):
+    """
+    Perform training over one epoch of data.
+    """
+
+    # Initialize hidden layer to zeros
+    hidden_prev = model.init_hidden()
+
+    total_loss = 0 
+    iter = 0
+    for curr_tensor in data_tensors:
+
+        curr_tensor = curr_tensor.to(torch.float32)
+
+        # Split into input and target values
+        inputs, targets = curr_tensor[:,:-1,:], curr_tensor[:,1:,:]
+        output, hidden_prev = model(inputs, hidden_prev)
+        hidden_prev = (hidden_prev[0].detach(), hidden_prev[1].detach())
+        loss = criterion(output, targets)
+        model.zero_grad()
+        loss.backward()
+
+        # Update weights based on mainly the new gradients and learning rate
+        optimizer.step()
+
+        total_loss += loss.item()
+
+        # Save a model from each checkpoint
+        if iter in save_points:
+            save_model(model, optimizer, f'./models/model_{iter}.pt')
+
+        iter += 1
+
+    return total_loss / iter
+
+def validate_lstm(model, criterion, data_tensors):
+    """
+    Perform validation over one epoch of data.
+    """
+
+    # Initialize hidden layer to zeros
+    hidden_prev = model.init_hidden()
+
+    total_loss = 0
+    iter = 0
+    with torch.no_grad():
+        for curr_tensor in data_tensors:
+
+            curr_tensor = curr_tensor.to(torch.float32)
+
+            # Split into input and target values
+            inputs, targets = curr_tensor[:,:-1,:], curr_tensor[:,1:,:]
+            output, hidden_prev = model(inputs, hidden_prev)
+            hidden_prev = (hidden_prev[0].detach(), hidden_prev[1].detach())
+            loss = criterion(output, targets)
+
+            total_loss += loss.item()
+
+            iter += 1
+    
+    return total_loss / iter
