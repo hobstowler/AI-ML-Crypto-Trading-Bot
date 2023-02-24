@@ -58,16 +58,15 @@ def trade_decision(input, prediction, threshold=0.05, idx=0):
     # Calculate the percentage difference between the input and prediction
     percent_diff = (pred_last - input_last) / input_last
 
-    # If the prediction is greater than the input, buy
+    # If the difference from the predicted value to current is greater than the trade threshold, buy
     if percent_diff > threshold:
         return 1
-    # If the prediction is less than the input, sell
+    # If the difference from the predicted value to current is less than the negative trade threshold, sell
     elif percent_diff < -threshold:
         return -1
     # Otherwise, hold
     else:
         return 0
-
 
 if __name__ == '__main__':
 
