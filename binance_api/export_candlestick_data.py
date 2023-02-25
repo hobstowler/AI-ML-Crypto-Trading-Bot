@@ -11,8 +11,8 @@ HELP_MESSAGE = "\nUSAGE:"\
 def export_candlestick_data(arguments: list):
     binance = BinanceAPI()
     data = binance.get_candlestick_dataframe(
-            arguments[0], (arguments[1]), (arguments[2]), 
-            int(arguments[3]))
+            arguments[0], (arguments[1] + " 00:00:00"), 
+            (arguments[2] + "00:00:00"), int(arguments[3]))
     binance.export_candlestick_dataframe_csv(data, arguments[4])
     
 def user_needs_help(arguments, options_dict: dict):

@@ -1,6 +1,3 @@
-# Adapted from: https://medium.com/dejunhuang/learning-day-27-implementing-rnn-in-pytorch-for-time-series-prediction-3ddb6190e83d
-
-# IMPORTS
 import torch
 from torch import nn, optim
 import os
@@ -8,8 +5,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import datetime
-
-# data handling
+import pandas as pd
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data import random_split
@@ -19,16 +15,16 @@ sys.path.append(parent_dir)
 from data_conversion.generate_datasets import tensors_from_csv
 from data_conversion.generate_datasets import generate_csv_datasets
 from data_conversion.generate_datasets import clean_dataset_csv_files
+from data_conversion.generate_datasets import normalize_data
 from binance_api import binance_api
+from sklearn.preprocessing import MinMaxScaler
 
-
-# CONSTANTS
 
 # Model hyperparameters
 HIDDEN_SIZE = 100
 INPUT_SIZE = 10
 OUTPUT_SIZE = 10
-NUM_LAYERS = 1
+NUM_LAYERS = 5
 BATCH_SIZE = 1 
 LR = 1e-5
 EPOCHS = 50
@@ -47,6 +43,7 @@ class Net(nn.Module):
         self.output_size = output_size
         self.num_layers = num_layers
         self.batch_size = batch_size
+        self.scaler = MinMaxScaler()
 
         # for training
         self.criterion = None
@@ -132,7 +129,7 @@ class Net(nn.Module):
         i = 0
         for epoch in range(epochs):
             
-            self.generate_dataset(sequence_length=sequence_length)
+            self.scaler = self.generate_dataset(sequence_length=sequence_length)
             train_tensors = self.get_tensors(sequence_length, 
                                             batch_sz=self.batch_size, 
                                             kind="train")
@@ -214,55 +211,6 @@ class Net(nn.Module):
         plt.plot(pred_y, 'y')
         plt.show()
 
-    
-    def predict(self, sequence_length, batch_size, pred_len):
-        # Initialize hidden layer to zeros
-
-        self.set_batch_size(1)
-
-        data_tensors = self.get_tensors(sequence_length=sequence_length, 
-                                        batch_sz=batch_size, kind="test")
-
-        iter = 0
-        predictions = []
-        with torch.no_grad():
-            for curr_tensor in data_tensors:
-                hidden_prev = self.init_hidden()
-
-                curr_tensor = curr_tensor.to(torch.float32)
-
-                split_point = len(curr_tensor[0]) - pred_len
-
-                # Split into input and target values
-                inputs = curr_tensor[:, :split_point, :] 
-                targets = curr_tensor[:, split_point:, :]
-                # Run through the inputs to build up the hidden state
-                output, hidden_prev = self(inputs, hidden_prev)
-            
-                prediction = torch.zeros(targets.shape)
-                # Make predictions for each value in the target
-                for i in range(pred_len):
-                    # Use the last output as the next input
-                    output, hidden_prev = self(output[:,-1,:].unsqueeze(1), 
-                                               hidden_prev)
-                    prediction[:,i,:] = output
-
-                loss = self.get_criterion()(prediction, targets)
-
-                self.loss_values.append(loss.item())
-
-                if iter % 1 == 0:
-                    print(f'iteration: {iter}, prediction loss {loss.item()}')
-
-                iter += 1
-
-                print("Prediction: ", prediction)
-                print("Target: ", targets)
-
-                predictions.append(prediction)
-
-        return predictions
-
     def save(self):
         current_time = str(datetime.datetime.now())
         torch.save(self.state_dict(), f"./saved_rnn_models/{current_time}")
@@ -270,14 +218,27 @@ class Net(nn.Module):
     def load(self, path_to_rnn_model):
         self.load_state_dict(torch.load(path_to_rnn_model))
         self.eval()
+        
+    def normalize_columns(self, dataframe):
+        dataframe, self.scaler = normalize_data(dataframe, self.scaler)
+        return dataframe
+    
+    def denormalize_close_price(self, close_price_norm):
+        min_val = self.scaler.data_min_[3]
+        max_val = self.scaler.data_max_[3]
+        diff = max_val - min_val
+        close_price_denorm = (close_price_norm * diff) + min_val
+        return close_price_denorm
 
-    def get_next_open_price(self):
+    def get_next_close_price(self):
         
         # get most recent times
         today = datetime.datetime.now()
         yesterday = today - datetime.timedelta(days=1)
-        yesterday = datetime.datetime.strftime(yesterday, "%Y-%m-%d")
-        today = datetime.datetime.strftime(today, "%Y-%m-%d")
+        yesterday = datetime.datetime.strftime(
+            yesterday, "%Y-%m-%d %H:%M:%S")
+        today = datetime.datetime.strftime(
+            today, "%Y-%m-%d %H:%M:%S")
         
         # get data from binance
         binance = binance_api.BinanceAPI()
@@ -289,11 +250,17 @@ class Net(nn.Module):
         data_len = len(data)
 
         # convert data to tensors
-        current_time = str(datetime.datetime.now().strftime("%Y%m%d-%H%M%S%f"))
+        current_time = str(
+            datetime.datetime.now().strftime("%Y%m%d %H:%M:%S%f"))
         data_filepath = f"./data-{current_time}"
         binance.export_candlestick_dataframe_csv(
             pandas_dataframe=data,
             csv_filepath=data_filepath)
+        df = pd.read_csv(data_filepath)
+        print("DF BEFORE NORM\n", df)
+        df = self.normalize_columns(df)
+        # print("DF\n", df)
+        df.to_csv(data_filepath, index=False)
         tensors = tensors_from_csv(
             infile=data_filepath, 
             seq_len=data_len,
@@ -304,7 +271,8 @@ class Net(nn.Module):
                 "taker_buy_base_asset_volume", 
                 "taker_buy_quote_asset_volume"
             ])
-        
+        # print("TENSORS\n", tensors)
+
         # delete data csv
         os.remove(data_filepath)
         
@@ -314,8 +282,15 @@ class Net(nn.Module):
             tensor = tensor.to(torch.float32)
             output, hidden_prev = self(tensor, hidden_prev)
             hidden_prev = hidden_prev.detach()
+            
+        # convert output back to datafram for denormalization
+        output = output.detach().squeeze()
+        output =  pd.DataFrame(output.numpy())
+        # print("OUTPUT:\n", output)
+        # print("DENORM open price last row\n", output.iloc[-1, 0])
+        next_close_price = self.denormalize_close_price(output.iloc[-1, 3])
         
-        return output[-1, -1, 0].tolist()
+        return next_close_price
 
 
 def main():
@@ -346,9 +321,7 @@ def main():
     
     model.clean_dataset_csvs(48)
     
-    print("Next open price: " + model.get_next_open_price())
-
-    
+    print("Predicted next hour close price: ", model.get_next_close_price())
     
     
 if __name__ == "__main__":

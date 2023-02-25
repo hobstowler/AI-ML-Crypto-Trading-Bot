@@ -63,8 +63,8 @@ class BinanceAPI:
         time_interval = self.get_kline_intervals().get(time_interval_in_minutes)
         if time_interval is None:
             raise ValueError("time_interval_in_minutes is invalid.")
-        start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d")
-        end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d")
+        start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+        end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
         self._client.API_TESTNET_URL = "https://api.binance.us/api"
         data = self._client.get_historical_klines(
             ticker_symobol, time_interval, str(start_time), str(end_time))
