@@ -3,7 +3,7 @@ import {useState, useEffect} from "react";
 import {HiRefresh} from 'react-icons/hi';
 import SessionNavigatorTab from "./SessionNavigatorTab";
 
-export default function SessionNavigator({sessionList, activeSession, setActiveSession}) {
+export default function SessionNavigator({activeSession, setActiveSessionId}) {
   const [sessions, setSessions] = useState({});
   const [sessionTypes, setSessionTypes] = useState([]);
   const [activeSessionType, setActiveType] = useState("")
@@ -53,8 +53,8 @@ export default function SessionNavigator({sessionList, activeSession, setActiveS
             </td>
             <td className="sessions">
               {sessions[activeSessionType] ? sessions[activeSessionType].map((session, i) => <SessionListItem session={session}
-                                                         active={session.name === activeSession ? true : false}
-                                                         setActiveSession={setActiveSession}
+                                                         active={session.id === activeSession ? true : false}
+                                                         setActiveSession={setActiveSessionId}
                                                          key={i}/>) : `No sessions of type: ${activeSessionType}`}
             </td>
           </tr>

@@ -91,7 +91,7 @@ html, body, #root, .App {
 }
 
 .sessionHeader {
-  padding-left: 100px;
+  padding-left: 105px;
   text-align: left;
 }
 
@@ -175,11 +175,31 @@ tr td {
   padding: 2px 3px;
   margin-bottom: 3px;
   font-size: 14px;
+  background-color: aliceblue;
+}
+
+.sessionListItem:hover {
+  background-color: lightskyblue;
+}
+
+.sessionListItemActive {
+  width: 250px;
+  cursor: pointer;
+  border: 2px solid black;
+  padding: 2px 3px;
+  margin-bottom: 3px;
+  font-size: 14px;
+  background-color: deepskyblue;
 }
 
 .sessionListItem h3 {
   font-size: 18px;
   color: blue;
+}
+
+.sessionListItemActive h3 {
+  font-size: 18px;
+  color: darkblue;
 }
 
 .sessionInfo div {
