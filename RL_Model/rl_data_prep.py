@@ -8,11 +8,13 @@ class RLDataPrepper:
         self.interval = interval
         self.original = df
         self.df = df[['Close', 'asset volume']]
+        #self.df = self.df.drop(columns=['Volume'], axis=1)
+        self.df = self.df.rename(columns={'asset volume': 'Volume'})
         self.df = self.df.loc[(self.df != 0.0).any(axis=1)]
         if self.interval == '1m':
             self.int_per_day = 1440
         elif self.interval == '5m':
-            self.int_per_day - 288
+            self.int_per_day = 288
         elif self.interval == '30m':
             self.int_per_day = 48
         elif self.interval == '1h':
@@ -23,7 +25,7 @@ class RLDataPrepper:
     def reset(self):
         self.df = self.original
 
-    def do_it_all(self) -> pd.DataFrame:
+    def do_it_all(self, normalize=True) -> pd.DataFrame:
         self.diffs()
         self.generate_sma30(30 * self.int_per_day)
         self.generate_ema30(30 * self.int_per_day)
@@ -31,10 +33,14 @@ class RLDataPrepper:
         self.bollinger_bands()
         self.macd()
         self.rsi()
+        if normalize:
+            self.normalize()
+
+            self.df['_Volume'] = self.original['asset volume']
+            self.df['_Close'] = self.original['Close']
         self.df = self.df.replace(np.inf, np.nan)
         self.df = self.df.dropna()
         self.df = self.df.reset_index(drop=True)
-        return self.df
 
         return self.df
 
@@ -70,6 +76,11 @@ class RLDataPrepper:
         ema_up = up.ewm(com=(13 * self.int_per_day)).mean()
         ema_down = down.ewm(com=(13 * self.int_per_day)).mean()
         self.df['rs'] = ema_up / ema_down
+
+    def normalize(self):
+        for column in self.df.columns:
+            self.df[column] = self.df[column] / self.df[column].abs().max()
+
 
 
 if __name__ == '__main__':
