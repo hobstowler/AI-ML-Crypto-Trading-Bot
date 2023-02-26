@@ -1,15 +1,15 @@
-export default function SessionListItem(session, i) {
+export default function SessionListItem({session, setActiveSession, active}) {
   return (
     <div className="sessionListItem">
-      <h3>{session.name}</h3>
+      <h3>{session.session_name}</h3>
       <div className="sessionInfo">
-        <div>{session.model}</div>
-        <div>{session.currency}</div>
+        <div>{session.model_name ? session.model_name : ""}</div>
+          <div><pre> | </pre></div>
+        <div>{session.type}</div>
       </div>
       <div className="sessionDates">
-        <div>{session.start}</div>
-        <div>{" - "}</div>
-        <div>{session.end}</div>
+        <div><b>Start: </b> {session.session_start.toLocaleString()}</div>
+      <div><b>End: </b>{session.session_end ? session.session_end.toLocaleString() : ""}</div>
       </div>
     </div>
   )
