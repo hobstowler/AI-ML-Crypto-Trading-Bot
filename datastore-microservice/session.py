@@ -169,7 +169,9 @@ def create_transaction(request, session_id):
     })
 
     # unpack values
+    print(values)
     for val in values.split(','):
+        print(val)
         s = val.split('=')
         transaction.update({s[0]: s[1]})
 
