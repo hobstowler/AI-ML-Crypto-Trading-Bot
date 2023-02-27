@@ -22,7 +22,8 @@ export default function TransactionList({sessionId}) {
         else return response.json();
       })
       .then(json => {
-        console.log(json)
+        setTransactions(json.transactions)
+        console.log(json.transactions)
       })
   }
 
