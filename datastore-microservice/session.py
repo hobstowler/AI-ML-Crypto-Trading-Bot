@@ -155,20 +155,26 @@ def session_transactions(session_id: str):
 def create_transaction(request, session_id):
     json = request.get_json()
     try:
+        step = int(json['step'])
         transaction_type = json['type']
-        amount = json['amount']
-        value = json['value']
+        values = json['values']
     except KeyError:
-        return jsonify({"error": "missing required fields"}), 404
-
-    try:
-        trans_dt_tm = json['transaction_date_time']
-    except KeyError:
-        trans_dt_tm = datetime.utcnow().strftime('%m/%d/%Y, %H:%M:%S')
+        return jsonify({"error": "missing required fields"}), 400
 
     transaction = datastore.Entity(client.key('Transaction'))
-    for key, value in json.items():
-        transaction.update({key: value})
+    transaction.update({
+        'step': step,
+        'type': transaction_type,
+        'session_id': int(session_id),
+    })
+
+    # unpack values
+    print(values)
+    for val in values.split(','):
+        print(val)
+        s = val.split('=')
+        transaction.update({s[0]: s[1]})
+
     client.put(transaction)
     res = dict(transaction)
     res['id'] = transaction.id
@@ -178,7 +184,7 @@ def create_transaction(request, session_id):
 
 def get_transactions(session_id: str):
     query = client.query(kind='Transaction')
-    query.add_filter('session_id', '=', session_id)
+    query.add_filter('session_id', '=', int(session_id))
 
     results = query.fetch()
     results = list(results)
