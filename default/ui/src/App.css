@@ -145,6 +145,11 @@ tr td {
   margin: 3px 0;
 }
 
+.sessionNavigatorTab:first-child {
+  padding-top: 0px;
+  margin-top: 0px;
+}
+
 .sessionNavigatorTab:hover {
   background-color: darkblue;
   color: white;
@@ -161,6 +166,11 @@ tr td {
   text-align: center;
   border: 2px solid black;
   margin: 3px 0;
+}
+
+.sessionNavigatorTabActive:first-child {
+  padding-top: 0px;
+  margin-top: 0px;
 }
 
 .sessionNavigatorTabActive:hover {
@@ -203,7 +213,7 @@ tr td {
 
 .sessionListItemActive h3 {
   font-size: 18px;
-  color: darkblue;
+  color: aliceblue;
 }
 
 .sessionInfo div {
