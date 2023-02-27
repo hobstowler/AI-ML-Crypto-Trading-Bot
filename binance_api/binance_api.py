@@ -7,7 +7,8 @@ class BinanceAPI:
     
     def __init__(self) -> None:
         self._keys = BinanceKeys()
-        self._client = Client(self._keys.get_api_key(), self._keys.get_api_secret(), testnet=True)
+        self._client = Client(self._keys.get_api_key(), 
+                              self._keys.get_api_secret(), testnet=True)
 
     def print_exchange_info(self):
         print(self._client.get_exchange_info())
@@ -22,7 +23,9 @@ class BinanceAPI:
                 print(ticker)
                 
     def get_kline_intervals(self):
-        """Returns a dict of possible KLINE intervals from Binance in length of minutes.
+        """
+        Returns a dict of possible KLINE intervals from Binance in length of 
+        minutes.
 
         Returns:
             (dict): hash of possible KLINE intervals whose keys are in minutes
@@ -46,13 +49,16 @@ class BinanceAPI:
         }
 
     def get_historical_data_candles(
-        self, ticker_symobol: str, start_time: str, end_time: str, time_interval_in_minutes: int):
+        self, ticker_symobol: str, start_time: str, end_time: str, 
+        time_interval_in_minutes: int):
         """Retrieves past candlestick data for `ticker_symbol`.
 
         Args:
             ticker_symobol (str): e.g. `"BTCUSDT"`.
-            minutes_from_now (int): quantity of minutes in the past to pull data from.
-            time_interval_in_minutes (int): candlestick interval (e.g. `1` for 1 minute candles)
+            minutes_from_now (int): quantity of minutes in the past to pull 
+                data from.
+            time_interval_in_minutes (int): candlestick interval (e.g. `1` 
+                for 1 minute candles)
 
         Raises:
             ValueError: for incorrect argument values.
@@ -73,26 +79,34 @@ class BinanceAPI:
 
 
     def get_candlestick_dataframe(
-        self, ticker_symbol: str, start_time: str, end_time: str, time_inteval_in_minutes: int):
-        """Gets a Pandas-labelled dataframe of candlestick data
+        self, ticker_symbol: str, start_time: str, end_time: str, 
+            time_inteval_in_minutes: int):
+        """
+        Gets a Pandas-labelled dataframe of candlestick data
 
         Args:
             ticker_symobol (str): e.g. `"BTCUSDT"`.
-            minutes_from_now (int): quantity of minutes in the past to pull data from.
-            time_interval_in_minutes (int): candlestick interval (e.g. `1` for 1 minute candles)
+            minutes_from_now (int): quantity of minutes in the past to pull 
+                data from.
+            time_interval_in_minutes (int): candlestick interval (e.g. `1` 
+                for 1 minute candles)
 
         Returns:
-            (Pandas.DataFrame): Two-dimensional, size-mutable, tabular data of requested candles.
+            (Pandas.DataFrame): Two-dimensional, size-mutable, tabular data 
+                of requested candles.
         """
         candles = self.get_historical_data_candles(
             ticker_symbol, start_time, end_time, time_inteval_in_minutes)
         candles_dataframe = pandas.DataFrame(
             candles, 
             columns=[
-                "date_time", "open_price", "high_price", "low_price", "close_price", "volume", 
+                "date_time", "open_price", "high_price", "low_price", 
+                "close_price", "volume", 
                 "close_time", "quote_asset_volume", "qty_transactions", 
-                "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "ignore"])
-        candles_dataframe.date_time = pandas.to_datetime(candles_dataframe.date_time, unit='ms')
+                "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", 
+                "ignore"])
+        candles_dataframe.date_time = pandas.to_datetime(
+            candles_dataframe.date_time, unit='ms')
         candles_dataframe.date_time.dt.strftime("%Y/%m/%d %H:%M:%S")
         candles_dataframe.set_index('date_time', inplace=True)
         candles_dataframe.drop(["ignore"], axis=1)
