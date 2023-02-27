@@ -185,6 +185,7 @@ def create_transaction(request, session_id):
 def get_transactions(request, session_id: str):
     query = client.query(kind='Transaction')
     query.add_filter('session_id', '=', int(session_id))
+    query.order = ['step']
 
     limit = int(request.args.get('limit', '100'))
     offset = int(request.args.get('offset', '0'))

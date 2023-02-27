@@ -13,8 +13,7 @@ export default function TransactionList({sessionId}) {
 
   const getTransactions = () => {
     if (sessionId === 0) return
-    console.log(sessionId)
-    fetch(`/transactions?session_id=${sessionId}`, {
+    fetch(`/raw_transactions?session_id=${sessionId}`, {
       method: 'GET'
     })
       .then(response => {
@@ -23,7 +22,6 @@ export default function TransactionList({sessionId}) {
       })
       .then(json => {
         setTransactions(json.transactions)
-        console.log(json.transactions)
       })
   }
 

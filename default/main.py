@@ -47,11 +47,53 @@ def get_transactions():
     if session_id == 'undefined':
         return 'No session with provided ID found.', 404
 
-    resp = requests.get(f'{URL}session/{session_id}/transaction')
-    if resp.status_code == 200:
-        return resp.json()
-    else:
-        return '', resp.status_code
+    next_url = f'{URL}/session/{session_id}/transaction'
+    results = []
+    while next_url:
+        resp = requests.get(next_url)
+        if resp.status_code == 200:
+            json = resp.json()
+            next_url = json['next']
+            transactions = json['transactions']
+            for transaction in transactions:
+                results.append(transaction)
+        else:
+            raise Exception(f'response from server: {resp.status_code}')
+    # results.sort(key=lambda x: x['step'])
+
+    sorted_results = {}
+    for result in results:
+        for key, val in result.items():
+            if key not in ['step', 'id', 'session_id', 'type']:
+                if key not in sorted_results.keys():
+                    sorted_results[key] = [val]
+                else:
+                    sorted_results[key].append(val)
+
+    return jsonify(sorted_results), 200
+
+
+@app.route('/raw_transactions', methods=['GET'])
+def get_raw_transactions():
+    session_id = request.args.get("session_id", 'undefined')
+    if session_id == 'undefined':
+        return 'No session with provided ID found.', 404
+
+    next_url = f'{URL}/session/{session_id}/transaction'
+    results = []
+    while next_url:
+        resp = requests.get(next_url)
+        if resp.status_code == 200:
+            json = resp.json()
+            next_url = json['next']
+            transactions = json['transactions']
+            for transaction in transactions:
+                results.append(transaction)
+        else:
+            raise Exception(f'response from server: {resp.status_code}')
+    # results.sort(key=lambda x: x['step'])
+
+    return jsonify(results), 200
 
 
 
