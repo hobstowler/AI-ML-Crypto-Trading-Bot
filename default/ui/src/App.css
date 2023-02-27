@@ -12,8 +12,9 @@ html, body, #root, .App {
 
 .headerWrapper {
   margin: 0 auto;
-  width: 70%;
-  height: 15%;
+  padding-bottom: 20px;
+  border-bottom: 3px solid black;
+  margin: 20px 0;
 }
 
 .headerWrapper h1 {
@@ -23,47 +24,239 @@ html, body, #root, .App {
 .navWrapper {
   margin: 0 auto;
   width: 35%;
+  background-color: lightgrey;
 }
 
 .navWrapper ul li{
   display:inline-block;
-  padding: 10px 1em;
-  background-color: aqua;
-  border: 1px solid darkgray;
+  font-weight: bolder;
+  padding: 3px 1em;
+  border-left: 1px solid black;
+}
+
+.navWrapper ul li:last-child {
+  border-right: 1px solid black;
+}
+
+.navWrapper ul li a {
+  text-decoration: none;
+  color: darkblue;
+}
+
+.navWrapper ul li a:hover {
+  color: white;
 }
 
 .navWrapper ul li:hover {
   background-color: blue;
-}
-
-.sessionNavigator {
-  width: 20%;
+  color: white;
 }
 
 .sessionPage {
-  display: inline-block;
   width: 100%;
   height: auto;
-  min-height: 85%;
+  min-height: 100%;
+  display: inline-flex;
+  flex-direction: row;
+  justify-content: flex-start;
 }
 
 .sessionPage > div {
-  display: inline-block;
-  min-height: 100%;
 }
 
 .sessionMid {
-  width: 60%;
-  height: auto;
-  min-height: 100%;
-  display: block;
-  background-color: antiquewhite;
+  max-height: calc(100% - 400px);
+  flex-grow: 1;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  margin-left: 20px;
 }
 
 .sessionGraph {
   width: 100%;
+  max-height: calc(100% - 300px);
+  flex-grow: 1;
+}
+
+.sessionDetails {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex-grow: 0;
+  margin-right: 50px;
+}
+
+.sessionNavigatorWrapper {
+  margin:0;
+  flex-grow: 0;
+  height: 100%;
+  min-height: 100% !important;
+}
+
+.sessionHeader {
+  padding-left: 105px;
+  text-align: left;
+}
+
+.sessionHeader h2 div {
+  display: inline-block;
+}
+
+.sessionHeader h2 div:first-child {
+  padding-left: 15px;
+}
+
+.refreshButton {
+  margin-left: 10px;
+  color: green;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.sessionNavigatorBody div {
+
+}
+
+tr td {
+  height: 100%;
+}
+
+.sessionNavigatorTabs  {
+  width: 100px;
+  display: flex;
+  flex-direction: column;
+  padding-right: 4px;
+  border-right: 2px solid black;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.sessionNavigatorTab {
+  display: block;
+  padding: 2px 3px;
+  font-weight: bolder;
+  font-size: 12px;
+  color: blue;
+  background-color: aliceblue;
+  cursor: pointer;
+  text-align: center;
+  border: 2px solid black;
+  margin: 3px 0;
+}
+
+.sessionNavigatorTab:first-child {
+  padding-top: 0px;
+  margin-top: 0px;
+}
+
+.sessionNavigatorTab:hover {
+  background-color: darkblue;
+  color: white;
+}
+
+.sessionNavigatorTabActive {
+  display: block;
+  padding: 2px 3px;
+  font-weight: bolder;
+  font-size: 12px;
+  color: black;
+  background-color: cornflowerblue;
+  cursor: pointer;
+  text-align: center;
+  border: 2px solid black;
+  margin: 3px 0;
+}
+
+.sessionNavigatorTabActive:first-child {
+  padding-top: 0px;
+  margin-top: 0px;
+}
+
+.sessionNavigatorTabActive:hover {
+  background-color: darkblue;
+  color: white;
+}
+
+.sessions {
+  padding-left: 8px;
+}
+
+.sessionListItem {
+  width: 250px;
+  cursor: pointer;
+  border: 2px solid black;
+  padding: 1px 6px;
+  margin-bottom: 3px;
+  font-size: 14px;
+  background-color: aliceblue;
+}
+
+.sessionListItem:hover {
+  background-color: lightskyblue;
+}
+
+.sessionListItemActive {
+  width: 250px;
+  cursor: pointer;
+  border: 2px solid black;
+  padding: 1px 6px;
+  margin-bottom: 3px;
+  font-size: 14px;
+  background-color: deepskyblue;
+}
+
+.sessionListItem h3 {
+  font-size: 18px;
+  color: blue;
+}
+
+.sessionListItemActive h3 {
+  font-size: 18px;
+  color: aliceblue;
+}
+
+.sessionInfo div {
+  display: inline-block;
 }
 
 .sessionDetail {
-  width: 20%;
+  padding: 3px 8px;
+  flex-grow: 0;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  margin-right: 20px;
+}
+
+.sessionDetailInfo {
+  border: 2px solid black;
+  background-color: aliceblue;
+  padding: 3px 6px 8px 6px;
+}
+
+.sessionDetailInfo div{
+  display: block;
+}
+
+.sessionDetail h2 {
+  padding-bottom: 5px;
+}
+
+.sessionDetail div {
+  font-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  white-space: pre;
+  font-size: 13px;
+}
+
+.transactionDetail {
+  padding: 3px 8px;
+}
+
+.transactionDetail h2 {
+  padding-bottom: 5px;
+}
+
+.transactionDetail h2 div {
+  display: inline-block;
 }

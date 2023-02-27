@@ -2,38 +2,42 @@ import {useEffect, useState} from "react";
 import TransactionListItem from "./TransactionListItem";
 import {HiRefresh} from 'react-icons/hi';
 
-export default function TransactionList(activeSession) {
+export default function TransactionList({sessionId}) {
+  console.log(sessionId)
   const [transactions, setTransactions] = useState([]);
-  const [activeTransaction, setActiveTransaction] = useState(-1)
+  const [activeTransactionId, setActiveTransactionId] = useState(-1)
 
   useEffect(() => {
     getTransactions();
-  }, [activeSession])
+  }, [sessionId])
 
   const getTransactions = () => {
-    if (!activeSession) return
-    fetch(`/transactions?session_id=${activeSession.id}`, {
+    if (sessionId === 0) return
+    console.log(sessionId)
+    fetch(`/transactions?session_id=${sessionId}`, {
       method: 'GET'
     })
       .then(response => {
-
+        if (!response.ok) throw Error('invalid response');
+        else return response.json();
       })
       .then(json => {
-
+        setTransactions(json.transactions)
+        console.log(json.transactions)
       })
   }
 
   const refreshTransactions = () => {getTransactions();}
 
   return (
-    <div className="transactionList">
+    <div className="transactionDetail">
       <h2>
-        Transactions for {activeSession.name ? activeSession.name : "<null>"}
+        <div>Transactions List</div>
         <div className="refreshButton" onClick={refreshTransactions}><HiRefresh/></div>
       </h2>
       {transactions.map((transaction, i) => <TransactionListItem transaction={transaction}
-                                                                 setActiveTransaction={setActiveTransaction}
-                                                                 active={i == activeTransaction ? true : false}
+                                                                 setActiveTransaction={setActiveTransactionId}
+                                                                 active={i == activeTransactionId ? true : false}
                                                                  key={i}/>)}
     </div>
   )

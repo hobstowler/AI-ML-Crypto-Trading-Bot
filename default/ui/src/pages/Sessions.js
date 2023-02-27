@@ -6,7 +6,7 @@ import TransactionList from "../components/TransactionList";
 
 export default function Sessions() {
   const [sessions, setSessions] = useState([]);
-  const [activeSession, setActiveSession] = useState(null);
+  const [activeSessionId, setActiveSessionId] = useState(0);
 
   useEffect(() => {
     getSessions();
@@ -21,13 +21,15 @@ export default function Sessions() {
   }
 
   return (
-    <div>
-      <SessionNavigator/>
-      <div>
+    <div className="sessionPage">
+      <SessionNavigator activeSession={activeSessionId} setActiveSessionId={setActiveSessionId}/>
+      <div className="sessionMid">
         <SessionGraph/>
-        <TransactionList/>
       </div>
-      <SessionDetail/>
+      <div className="sessionDetails">
+        <SessionDetail sessionId={activeSessionId} />
+        <TransactionList sessionId={activeSessionId} />
+      </div>
     </div>
   )
 }
