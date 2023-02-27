@@ -147,7 +147,7 @@ def session_transactions(session_id: str):
     if request.method == 'POST':
         return create_transaction(request, session_id)
     elif request.method == 'GET':
-        return get_transactions(session_id)
+        return get_transactions(request, session_id)
     else:
         return 'Not found: invalid request method.', 501
 
@@ -182,24 +182,35 @@ def create_transaction(request, session_id):
     return jsonify(res), 201
 
 
-def get_transactions(session_id: str):
+def get_transactions(request, session_id: str):
     query = client.query(kind='Transaction')
     query.add_filter('session_id', '=', int(session_id))
 
-    results = query.fetch()
-    results = list(results)
-    total = len(results)
+    limit = int(request.args.get('limit', '100'))
+    offset = int(request.args.get('offset', '0'))
+    l_iterator = query.fetch(limit=limit, offset=offset)
+    pages = l_iterator.pages
+    transactions = list(next(pages))
+    if l_iterator.next_page_token:
+        new_offset = offset + limit
+        next_url = f'{request.base_url}?limit={limit}&offset={new_offset}'
+    else:
+        next_url = None
+
+    results = []
+    for transaction in transactions:
+        res = dict(transaction)
+        res['id'] = transaction.id
+        results.append(res)
+
     self = f'{request.base_url}'
-    transactions = []
-    for result in results:
-        transaction = dict(result)
-        transaction['transaction_id'] = result.id
-        transactions.append(transaction)
+    total = len(transactions)
 
     return jsonify({
         "self": self,
+        "next": next_url,
         "total_transactions": total,
-        "transactions": transactions
+        "transactions": results
     }), 200
 
 
