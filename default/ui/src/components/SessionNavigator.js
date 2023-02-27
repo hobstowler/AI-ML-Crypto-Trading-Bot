@@ -24,11 +24,8 @@ export default function SessionNavigator({activeSession, setActiveSessionId}) {
         setSessions(json);
         setSessionTypes(Object.keys(json));
         setActiveType(Object.keys(json)[0]);
-        console.log(Object.keys(json))
       })
-      .catch((error) => {
-        console.log(error);
-      })
+      .catch((error) => console.log(error))
   }
 
   return (

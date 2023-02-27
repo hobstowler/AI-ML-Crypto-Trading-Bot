@@ -32,11 +32,27 @@ def get_sessions():
     return '', 500
 
 
+@app.route('/session/<id>', methods=['GET'])
+def get_session_by_id(id):
+    resp = requests.get(f'{URL}session/{id}')
+    if resp.status_code == 200:
+        return resp.json()
+    else:
+        return '', resp.status_code
+
+
 @app.route('/transactions', methods=['GET'])
 def get_transactions():
-    session_id = request.args.get("session_id")
+    session_id = request.args.get("session_id", 'undefined')
     if session_id == 'undefined':
         return 'No session with provided ID found.', 404
+
+    resp = requests.get(f'{URL}session/{session_id}/transaction')
+    if resp.status_code == 200:
+        return resp.json()
+    else:
+        return '', resp.status_code
+
 
 
 if __name__ == '__main__':

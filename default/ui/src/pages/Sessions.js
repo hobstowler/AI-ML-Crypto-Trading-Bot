@@ -21,13 +21,15 @@ export default function Sessions() {
   }
 
   return (
-    <div>
+    <div className="sessionPage">
       <SessionNavigator activeSession={activeSessionId} setActiveSessionId={setActiveSessionId}/>
-      <div>
+      <div className="sessionMid">
         <SessionGraph/>
-        <TransactionList/>
       </div>
-      <SessionDetail/>
+      <div className="sessionDetails">
+        <SessionDetail sessionId={activeSessionId} />
+        <TransactionList sessionId={activeSessionId} />
+      </div>
     </div>
   )
 }

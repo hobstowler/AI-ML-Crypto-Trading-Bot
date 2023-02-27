@@ -1,7 +1,7 @@
 export default function SessionListItem({session, setActiveSession, active}) {
   const setActive = () => {
-    setActiveSession(session.id)
-      console.log('hello')
+    if (active) setActiveSession(0)
+    else setActiveSession(session.id)
   }
 
   return (
