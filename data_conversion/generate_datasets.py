@@ -108,7 +108,8 @@ def normalize_data(df):
     # Normalize the data
     scaler = MinMaxScaler()
     df[number_columns] = scaler.fit_transform(df[number_columns])
-    return df
+
+    return df, (scaler.data_min_, scaler.data_max_, scaler.scale_)
 
 def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
     """
@@ -121,13 +122,16 @@ def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, t
         val_split (float, optional): Percentage of data to use for validation. Defaults to 0.1.
         test_split (float, optional): Percentage of data to use for testing. Defaults to 0.1.
         seed (int, optional): Seed value for random shuffling. Use to make consistent data sets. Defaults to None.
+
+    Returns:
+        tuple: tuple containing following lists: (data_min, data_max, scale)
     """
 
     # Read in the input file
     df = pandas.read_csv(input_file)
 
     # Normalize the data
-    df = normalize_data(df)
+    df, scale_params = normalize_data(df)
 
     all_indicies = generate_full_indicies(len(df), seq_len, train_split, val_split, test_split, seed)
 
@@ -142,6 +146,8 @@ def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, t
     train_df.to_csv(f"./train_{seq_len}.csv", index=False)
     val_df.to_csv(f"./val_{seq_len}.csv", index=False)
     test_df.to_csv(f"./test_{seq_len}.csv", index=False)
+
+    return scale_params
 
 def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
     """
@@ -191,5 +197,4 @@ if __name__ == '__main__':
     args = get_arguments()
     # Call generate_csv_datasets with the cli arguments
     generate_csv_datasets(args.input_file, int(args.seq_len), float(args.train_split), 
-
-                                    float(args.val_split), float(args.test_split), args.seed)
+                            float(args.val_split), float(args.test_split), args.seed)
