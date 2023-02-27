@@ -155,7 +155,7 @@ def session_transactions(session_id: str):
 def create_transaction(request, session_id):
     json = request.get_json()
     try:
-        step = json['step']
+        step = int(json['step'])
         transaction_type = json['type']
         values = json['values']
     except KeyError:
@@ -165,7 +165,7 @@ def create_transaction(request, session_id):
     transaction.update({
         'step': step,
         'type': transaction_type,
-        'session_id': session_id,
+        'session_id': int(session_id),
     })
 
     # unpack values
@@ -182,7 +182,7 @@ def create_transaction(request, session_id):
 
 def get_transactions(session_id: str):
     query = client.query(kind='Transaction')
-    query.add_filter('session_id', '=', session_id)
+    query.add_filter('session_id', '=', int(session_id))
 
     results = query.fetch()
     results = list(results)
