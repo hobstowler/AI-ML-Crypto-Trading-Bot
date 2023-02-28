@@ -1,5 +1,5 @@
 from binance.client import Client
-from binance_keys import BinanceKeys
+from binance_api.binance_keys import BinanceKeys
 import datetime
 import pandas 
 
@@ -219,46 +219,3 @@ class BinanceAPI:
     
     def get_datastore_info(self):
         pass
-            
-        
-def main():
-    binance = BinanceAPI()
-    
-    # BALANCES
-    account_info = binance.get_account_information()
-    print("\n---- Account Info ----")
-    print(account_info)
-    balances = binance.get_account_balances()
-    print("\n---- ALL BALANCES ----")
-    print(balances)
-    btc_balance = binance.get_account_balances(["BTC"])
-    print("\n---- BTC BALANCE ----")
-    print(btc_balance)
-    usdt_balance = binance.get_account_balances(["USDT"])
-    print("\n---- USDT BALANCE ----")
-    print(usdt_balance)
-    
-    # BUY
-    order = binance.buy_asset("BTCUSDT", 0.001)
-    print("\n---- ORDER RESULTS: BUY 0.001 BTC/USDT ----")
-    print(order)
-    btc_balance = binance.get_account_balances(["BTC"])
-    print("\n---- BTC BALANCE ----")
-    print(btc_balance)
-    usdt_balance = binance.get_account_balances(["USDT"])
-    print("\n---- USDT BALANCE ----")
-    print(usdt_balance)
-    
-    # SELL
-    order = binance.sell_asset("BTCUSDT", 0.001)
-    print("\n---- ORDER RESULTS: SELL 0.001 BTC/USDT ----")
-    print(order)
-    btc_balance = binance.get_account_balances(["BTC"])
-    print("\n---- BTC BALANCE ----")
-    print(btc_balance)
-    usdt_balance = binance.get_account_balances(["USDT"])
-    print("\n---- USDT BALANCE ----")
-    print(usdt_balance)
-
-if __name__ == "__main__":
-    main()

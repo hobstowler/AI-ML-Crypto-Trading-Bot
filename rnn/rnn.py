@@ -1,17 +1,9 @@
 import torch
-from torch import nn, optim
+from torch import nn
 import os
-import sys
 import matplotlib.pyplot as plt
-import numpy as np
 import datetime
 import pandas as pd
-from torch.utils.data.sampler import SubsetRandomSampler
-from torch.utils.data.dataloader import DataLoader
-from torch.utils.data import random_split
-current_dir = os.path.dirname(os.path.realpath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
 from data_conversion.generate_datasets import tensors_from_csv
 from data_conversion.generate_datasets import generate_csv_datasets
 from data_conversion.generate_datasets import clean_dataset_csv_files
@@ -33,8 +25,8 @@ EPOCHS = 50
 class Net(nn.Module):
 
     def __init__(
-        self, input_size, hidden_size, 
-        output_size, num_layers, batch_size
+        self, input_size=INPUT_SIZE, hidden_size=HIDDEN_SIZE, 
+        output_size=OUTPUT_SIZE, num_layers=NUM_LAYERS, batch_size=BATCH_SIZE
     ):
         super(Net, self).__init__()
 
@@ -99,7 +91,7 @@ class Net(nn.Module):
         self.batch_size = value
 
     def generate_dataset(self, sequence_length):
-        generate_csv_datasets("../training_data/2021.csv", 
+        generate_csv_datasets("training_data/2021.csv", 
                               seq_len=sequence_length)
         
     def clean_dataset_csvs(self, sequence_length):
@@ -213,7 +205,7 @@ class Net(nn.Module):
 
     def save(self):
         current_time = str(datetime.datetime.now())
-        torch.save(self.state_dict(), f"./saved_rnn_models/{current_time}")
+        torch.save(self.state_dict(), f"rnn/saved_rnn_models/{current_time}")
 
     def load(self, path_to_rnn_model):
         self.load_state_dict(torch.load(path_to_rnn_model))
@@ -257,7 +249,7 @@ class Net(nn.Module):
             pandas_dataframe=data,
             csv_filepath=data_filepath)
         df = pd.read_csv(data_filepath)
-        print("DF BEFORE NORM\n", df)
+        # print("DF BEFORE NORM\n", df)
         df = self.normalize_columns(df)
         # print("DF\n", df)
         df.to_csv(data_filepath, index=False)
@@ -291,38 +283,6 @@ class Net(nn.Module):
         next_close_price = self.denormalize_close_price(output.iloc[-1, 3])
         
         return next_close_price
-
-
-def main():
-
-    # build rnn model
-    model = Net(
-        input_size=INPUT_SIZE, 
-        hidden_size=HIDDEN_SIZE, 
-        output_size=OUTPUT_SIZE, 
-        num_layers=NUM_LAYERS,
-        batch_size=BATCH_SIZE
-    )
-
-    # train model
-    model._train(
-        epochs=EPOCHS, 
-        lr=LR,
-        optimizer=optim.Adam(model.parameters(), LR),
-        criterion=nn.MSELoss(),
-        sequence_length=48,
-    )
-
-    # validate model
-    model.validate(sequence_length=48, batch_size=BATCH_SIZE)
-
-    # save model
-    model.save()
     
-    model.clean_dataset_csvs(48)
-    
-    print("Predicted next hour close price: ", model.get_next_close_price())
-    
-    
-if __name__ == "__main__":
-    main()
+    def load_alpha(self):
+        self.load("rnn/saved_rnn_models/alpha.rnn")
