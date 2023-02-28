@@ -33,7 +33,7 @@ test = True
 
 symbol = 'BTCUSD'
 interval = '30m'
-intervals = ['1d', '1h', '30m', '5m', '1m']
+intervals = ['1d', '1h']
 interval_times = []
 
 for i in range(len(intervals)):

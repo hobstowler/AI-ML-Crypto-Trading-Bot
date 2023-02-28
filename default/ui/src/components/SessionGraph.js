@@ -1,43 +1,87 @@
 import {CanvasJSChart} from 'canvasjs-react-charts'
+import {useEffect, useState} from "react";
 
-export default function SessionGraph(session, transactions) {
-  // formats data for consumption by canvasJS graph and corrects the timestamp (ms to s)
-  const formatData = (data) => {
-    let dataPoints = []
-    for (let i = 0; i < data.length; i++) {
-      dataPoints.push({
-        x: new Date(data[i].x * 1000),
-        y: data[i].y
-      })
-    }
-    return dataPoints
-  }
+export default function SessionGraph({sessionId}) {
+  const [options, updateOptions] = useState({})
 
-  // builds graph options
-  const buildOptions = () => {
-    let newOptions = {
+  useEffect(() => {
+    updateOptions({
       theme: "light1",
       animationEnabled: true,
-      axisX: {
-        valueFormatString: "DD-MMM"
-      },
-      axisY: {
-        prefix: "$",
-        title: "Price (in USD)",
-        includeZero: false
-      },
-      data: [{
-        type: "candlestick",
-        yValueFormatString: "$###0.00",
-        xValueType: "dateTime",
-        dataPoints: null
-      }]
+      axisX: {},
+      axisY: {},
+      data: []
+    })
+  }, [])
+
+  useEffect(() => {
+    if (sessionId > 0) getTransactions();
+    else {
+      options.data = []
+      updateOptions(options)
     }
+  }, [sessionId])
+
+  const getTransactions = () => {
+    fetch(`/transactions?session_id=${sessionId}`, {})
+      .then(response => {
+        if (!response.ok) throw Error('Invalid response')
+        else return response.json()
+      })
+      .then(json => {
+        let maxY = 0, minY = 0
+        console.log(json)
+        let new_options = {
+          theme: "light1",
+          legend: {
+            cursor: "pointer",
+            itemclick: function (e) {
+              //console.log("legend click: " + e.dataPointIndex);
+              //console.log(e);
+              if (typeof (e.dataSeries.visible) === "undefined" || e.dataSeries.visible) {
+                e.dataSeries.visible = false;
+              } else {
+                e.dataSeries.visible = true;
+              }
+
+              e.chart.render();
+            }
+          },
+          animationEnabled: true,
+          axisX: {
+            title: "steps"
+          },
+          axisY: {},
+          data: []
+        }
+        for (const key of Object.keys(json)) {
+          let values = json[key]
+          let data = []
+          console.log(key)
+          console.log(values)
+          for (let i = 0; i < values.length; i++) {
+            let y_val = parseFloat(values[i])
+            data.push({x: i + 1, y: y_val})
+            minY = Math.min(minY, y_val)
+            maxY = Math.max(maxY, y_val)
+          }
+          new_options.data.push({
+            type: "line",
+            name: key,
+            markerType: "none",
+            legendText: key,
+            dataPoints: data,
+            showInLegend: true
+          })
+        }
+        new_options.axisY = {minimum: minY, maximum: maxY}
+        updateOptions(new_options)
+      })
   }
 
   return (
     <div className="sessionGraph">
-
+      <CanvasJSChart options={options} />
     </div>
   )
 }

@@ -1,0 +1,7 @@
+indexes:
+
+- kind: Transaction
+  properties:
+    - name: session_id
+    - name: step
+      direction: asc

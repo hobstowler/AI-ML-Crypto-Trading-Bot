@@ -16,6 +16,7 @@ from RL_Model.classes.environment import StockTradingEnv
 from RL_Model.classes.ppo_memory import PPOMemory
 from RL_Model.classes.actor import ActorNetwork
 from RL_Model.classes.critic import CriticNetwork
+from data.datastore_wrapper import DatastoreWrapper
 from rl_data_prep import RLDataPrepper
 
 
@@ -34,13 +35,13 @@ KILL_THRESH = 0.4  # terminate if balance too low. Acts as a percentage of initi
 N = 20
 batch_size = 10
 n_epochs = 5
-n_episodes = 500
+n_episodes = 10
 alpha = 0.0003  # learning rate
 
 # ##################################################################
 # ###  SCRIPT PARAMETERS
 # ##################################################################
-train_model = False
+train_model = True
 test_model = False
 train_csv = '../data/all_2021-01-01-2021-12-31_1h.csv'
 test_csv = '../data/all_2021-01-01-2022-12-31_1h.csv'
@@ -86,6 +87,10 @@ def train_model(n_episodes: int, csv: str, interval: str):
     avg_score = 0
     n_steps = 0
 
+    dw = DatastoreWrapper()
+    session_id = dw.create_session(**{"session_name": "RL train session", "type": "training", "model_name": "RL Model",
+                                      "starting_balance": 0.0, "starting_coins": 0.0, "crypto_type": "BTC"})
+
     print("... starting ...")
     for i in range(n_episodes):
         observation = env.reset()
@@ -115,6 +120,8 @@ def train_model(n_episodes: int, csv: str, interval: str):
         print(f"episode: {i+1}, score: {score:.2f}, avg score: {avg_score:.2f}, time_steps (current/total): {env.current_step - env.lag}/{n_steps}, learning steps: {learn_iters}")
         print(f"\ttrades (l/s): {env.num_trades_long}/{env.num_trades_short}, profit: {env.net_profit:.2f}, invalid decisions: {env.total_invalid_decisions}")
 
+        dw.create_transaction(i+1, 'training', session_id, **{"score": score, "average score": avg_score, "net profit": env.net_profit})
+
         if (i + 1) % 10 == 0:
             x = [i + 1 for i in range(len(score_history))]
             plot_learning_curve(x, score_history, figure_file)
@@ -127,12 +134,11 @@ def train_model(n_episodes: int, csv: str, interval: str):
 
 if __name__ == '__main__':
     if train_model:
-        pass
-        #train_model(n_episodes, train_csv, '1h')
+        train_model(n_episodes, train_csv, '1h')
 
     if test_model:
         pass
-
+    """
     data_prepper = RLDataPrepper(test_csv, '1h')
     df = data_prepper.do_it_all(False)
     x = [x + 1 for x in range(len(df))]
@@ -140,7 +146,6 @@ if __name__ == '__main__':
     plt.plot(x, df['bollinger_upper'])
     plt.plot(x, df['bollinger_lower'])
     plt.show()
-    """
     data_prepper = RLDataPrepper('../data/all_2021-01-01-2022-12-31_1h.csv', '1h')
     df = data_prepper.do_it_all()
 

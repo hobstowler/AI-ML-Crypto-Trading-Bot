@@ -128,7 +128,7 @@ tr td {
   flex-direction: column;
   padding-right: 4px;
   border-right: 2px solid black;
-  max-height: 100px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
@@ -180,6 +180,8 @@ tr td {
 
 .sessions {
   padding-left: 8px;
+  max-height: 800px;
+  overflow-y: auto;
 }
 
 .sessionListItem {
@@ -259,4 +261,9 @@ tr td {
 
 .transactionDetail h2 div {
   display: inline-block;
+}
+
+.transactionListDetail {
+  max-height: 600px;
+  overflow-y: auto;
 }

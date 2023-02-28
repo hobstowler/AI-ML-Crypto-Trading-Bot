@@ -5,8 +5,7 @@ export default function TransactionListItem({transaction, i, active, setActiveTr
 
   return (
     <div className="transactionListItem" onClick={activate}>
-      <h3>{transaction.transaction_id}</h3>
-      <h4>"{transaction.type}"</h4>
+      {transaction.step}: {transaction.id} - "{transaction.type}"
     </div>
   )
 }

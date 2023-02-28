@@ -21,7 +21,7 @@ export default function TransactionList({sessionId}) {
         else return response.json();
       })
       .then(json => {
-        setTransactions(json.transactions)
+        setTransactions(json)
       })
   }
 
@@ -33,10 +33,13 @@ export default function TransactionList({sessionId}) {
         <div>Transactions List</div>
         <div className="refreshButton" onClick={refreshTransactions}><HiRefresh/></div>
       </h2>
-      {transactions.map((transaction, i) => <TransactionListItem transaction={transaction}
+      <div className="transactionListDetail">
+        {transactions.map((transaction, i) => <TransactionListItem transaction={transaction}
                                                                  setActiveTransaction={setActiveTransactionId}
                                                                  active={i == activeTransactionId ? true : false}
                                                                  key={i}/>)}
+      </div>
+
     </div>
   )
 }

@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import requests
+import os
 
 app = Flask(__name__, instance_relative_config=True)
 
@@ -8,8 +9,7 @@ URL = 'https://datastore-micro-dot-ai-ml-bitcoin-bot.uw.r.appspot.com/'
 
 @app.route('/', methods=['GET'])
 def index():
-    return 'Refer to documentation at https://github.com/hobstowler/AI-ML-Bitcoin-Trading-Bot to begin. <br />' \
-           'App reporting management: '
+    return send_file(os.path.dirname(__file__) + '/ui/build/index.html')
 
 
 @app.route('/sessions', methods=['GET'])
@@ -88,11 +88,11 @@ def get_raw_transactions():
             next_url = json['next']
             transactions = json['transactions']
             for transaction in transactions:
-                results.append(transaction)
+                results.append(dict(transaction))
         else:
             raise Exception(f'response from server: {resp.status_code}')
     # results.sort(key=lambda x: x['step'])
-
+    print(results)
     return jsonify(results), 200
 
 
