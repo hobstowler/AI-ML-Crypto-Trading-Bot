@@ -10,11 +10,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
+# Add parent path to directory so we can import from data_conversion
+sys.path.append('../')
 
-# Add parent directory to path so we can import from data_conversion
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
 from data_conversion.generate_datasets import tensors_from_csv
 
 def save_model(model, optimizer, save_path):

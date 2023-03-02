@@ -15,7 +15,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-from model_tools import *
+from lstm.model_tools import *
  
 # Add parent directory to path so we can import from data_conversion
 current = os.path.dirname(os.path.realpath(__file__))
@@ -191,7 +191,7 @@ def train_from_csv(infile, outfile, features = FEATURES):
             'columns': features
         }
     
-        results = train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=False)
+        results = train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=True)
         
         types = ['train', 'val', 'test']
 
