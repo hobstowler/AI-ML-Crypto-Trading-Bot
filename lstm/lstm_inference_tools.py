@@ -46,9 +46,9 @@ def run_lstm_inference(hyperparams, model_path, input_tensors, pred_len):
     # Restore batch size to original value
     model.set_batch_size(batch_size)
 
-    return input, prediction
+    return prediction
 
-def trade_decision(input, prediction, threshold=0.05, idx=0):
+def make_trade_decision(input, prediction, threshold=0.05, idx=0):
     """
     Generate a trade decision based on the input and prediction.
     """
@@ -87,11 +87,13 @@ def lstm_inference_demo(input_tensors):
 
     model_path = '../lstm/models/model_test_1.pt'
 
-    input, predictions = run_lstm_inference(hyperparams, model_path, input_tensors, pred_len=6)
+    predictions = run_lstm_inference(hyperparams, model_path, input_tensors, pred_len=1)
 
-    print("Inference input", input)
-    print("Inference output", predictions)
+    #print("Inference input", input)
+    #print("Inference output", predictions)
 
-    trade = trade_decision(input, predictions, idx=0)
+    #trade = trade_decision(input, predictions, idx=0)
 
-    print("Trade decision", trade)
+    #print("Trade decision", trade)
+
+    return predictions

@@ -13,7 +13,7 @@ import pandas as pd
 sys.path.append('../')
 sys.path.append('../binance_api')
 sys.path.append('../data_conversion')
-from lstm.lstm_inference_tools import lstm_inference_demo
+from lstm.lstm_inference_tools import lstm_inference_demo, make_trade_decision
 from binance_api import binance_api
 from data_conversion.generate_datasets import inference_df_to_tensor, normalize_data
 
@@ -24,23 +24,42 @@ bp = Blueprint('inference', __name__, url_prefix='/inference')
 @bp.route('/lstm', methods=['GET'])
 def lstm_inference():
     if request.method == 'GET':
-        return lstm_inference_pipeline()
+        lstm_inference_pipeline()
+        return '', 200
 
+@bp.route('/rnn', methods=['GET'])
+def rnn_inference():
+    if request.method == 'GET':
+        # Add rnn inference here
+
+        return '', 200
+
+@bp.route('/rl', methods=['GET'])
+def rl_inference():
+    if request.method == 'GET':
+        # Add rl inference here
+
+        return '', 200
 
 def lstm_inference_pipeline():
     # Collect recent bitcoin price data
-    data, data_len = get_recent_binance_data()
+    input_data, data_len = get_recent_binance_data(context_steps=48, interval=60)
 
     # Data preprocessing
-    normalized_data = normalize_data(data)
+    normalized_data = normalize_data(input_data)
     input_tensors = inference_df_to_tensor(normalized_data, data_len, ['close_price', 'volume'])
 
     # Run inference
-    lstm_inference_demo(input_tensors)
+    predictions = lstm_inference_demo(input_tensors)
 
     # Post processing (denormalization)
 
     # Make trade decision
+    trade_decision = make_trade_decision(input_tensors, predictions)
+
+    print("Input data", input_tensors)
+    print("Predictions", predictions)
+    print("Trade decision", trade_decision)
 
     # Update Binance account
 
@@ -70,8 +89,8 @@ def get_recent_binance_data(context_steps=48, interval=60):
     data_len = len(data)
     
     # Workaround for issue with data from binance that include python object types
-    df.to_csv("temp.csv", index=False)
-    df = pd.read_csv("temp.csv")
+    data.to_csv("temp.csv", index=False)
+    data = pd.read_csv("temp.csv")
     os.remove("temp.csv")
 
     return data, data_len
