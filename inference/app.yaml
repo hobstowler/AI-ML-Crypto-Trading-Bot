@@ -1,0 +1,6 @@
+runtime: python39
+service: inference
+
+handlers:
+- url: /
+  script: auto

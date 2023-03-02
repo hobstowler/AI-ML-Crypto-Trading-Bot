@@ -1,0 +1,4 @@
+cron:
+- description: "run lstm"
+  url: /inference/lstm
+  schedule: every 1 minutes
