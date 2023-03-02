@@ -38,6 +38,14 @@ def lstm_inference_pipeline():
     # Run inference
     lstm_inference_demo(input_tensors)
 
+    # Post processing (denormalization)
+
+    # Make trade decision
+
+    # Update Binance account
+
+    # Update datastore
+
     return '', 200
 
 def get_recent_binance_data(context_steps=48, interval=60):
