@@ -46,25 +46,25 @@ class BinanceAPI:
         }
 
     def get_historical_data_candles(
-        self, ticker_symobol: str, start_time: str, end_time: str, time_interval_in_minutes: int):
+        self, ticker_symobol: str, start_time: str, end_time: str, 
+        time_interval_in_minutes: int):
         """Retrieves past candlestick data for `ticker_symbol`.
-
         Args:
             ticker_symobol (str): e.g. `"BTCUSDT"`.
-            minutes_from_now (int): quantity of minutes in the past to pull data from.
-            time_interval_in_minutes (int): candlestick interval (e.g. `1` for 1 minute candles)
-
+            minutes_from_now (int): quantity of minutes in the past to pull 
+                data from.
+            time_interval_in_minutes (int): candlestick interval (e.g. `1` 
+                for 1 minute candles)
         Raises:
             ValueError: for incorrect argument values.
-
         Returns:
             (list): list of OHLCV values from Binance.
         """
         time_interval = self.get_kline_intervals().get(time_interval_in_minutes)
         if time_interval is None:
             raise ValueError("time_interval_in_minutes is invalid.")
-        start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d")
-        end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d")
+        start_time = datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+        end_time = datetime.datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
         self._client.API_TESTNET_URL = "https://api.binance.us/api"
         data = self._client.get_historical_klines(
             ticker_symobol, time_interval, str(start_time), str(end_time))
