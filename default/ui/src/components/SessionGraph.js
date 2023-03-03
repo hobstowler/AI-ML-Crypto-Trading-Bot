@@ -3,15 +3,16 @@ import {useEffect, useState} from "react";
 
 export default function SessionGraph({sessionId}) {
   const [options, updateOptions] = useState({})
-
-  useEffect(() => {
-    updateOptions({
+  const initOptions = {
       theme: "light1",
       animationEnabled: true,
       axisX: {},
       axisY: {},
       data: []
-    })
+    };
+
+  useEffect(() => {
+    updateOptions(initOptions)
   }, [])
 
   useEffect(() => {

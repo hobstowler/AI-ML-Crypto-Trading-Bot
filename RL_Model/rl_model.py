@@ -35,7 +35,7 @@ KILL_THRESH = 0.4  # terminate if balance too low. Acts as a percentage of initi
 N = 20
 batch_size = 10
 n_epochs = 5
-n_episodes = 10
+n_episodes = 500
 alpha = 0.0003  # learning rate
 
 # ##################################################################
@@ -43,7 +43,7 @@ alpha = 0.0003  # learning rate
 # ##################################################################
 train_model = True
 test_model = False
-train_csv = '../data/all_2021-01-01-2021-12-31_1h.csv'
+train_csv = '../data/all_2021-01-01-2021-12-31_1d.csv'
 test_csv = '../data/all_2021-01-01-2022-12-31_1h.csv'
 
 
@@ -134,7 +134,7 @@ def train_model(n_episodes: int, csv: str, interval: str):
 
 if __name__ == '__main__':
     if train_model:
-        train_model(n_episodes, train_csv, '1h')
+        train_model(n_episodes, train_csv, '1d')
 
     if test_model:
         pass

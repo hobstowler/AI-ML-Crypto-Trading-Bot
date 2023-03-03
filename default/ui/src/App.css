@@ -114,6 +114,20 @@ html, body, #root, .App {
   cursor: pointer;
 }
 
+.sessionListItemActive h3 div {
+  display: inline-block;
+}
+
+.sessionListItem h3 div {
+  display: inline-block;
+}
+
+.deleteSession {
+  vertical-align: middle;
+  cursor: pointer;
+  color: red;
+}
+
 .sessionNavigatorBody div {
 
 }
@@ -180,12 +194,13 @@ tr td {
 
 .sessions {
   padding-left: 8px;
-  max-height: 800px;
+  height: 800px;
+  width: 260px;
   overflow-y: auto;
 }
 
 .sessionListItem {
-  width: 250px;
+  width: 225px;
   cursor: pointer;
   border: 2px solid black;
   padding: 1px 6px;
@@ -199,7 +214,7 @@ tr td {
 }
 
 .sessionListItemActive {
-  width: 250px;
+  width: 225px;
   cursor: pointer;
   border: 2px solid black;
   padding: 1px 6px;

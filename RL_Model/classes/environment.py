@@ -18,12 +18,13 @@ class StockTradingEnv(gym.Env):
         self.available_balance = INITIAL_ACCOUNT_BALANCE
         self.profit = 0
         self.net_profit = 0
+        self.unrealized_profit = 0
 
         # Position variables
         self.open_positions = {}
         self.num_trades_long = 0
         self.num_trades_short = 0
-        self.long_trade_pct = 0
+        self.long_short_ratio = 0
         self.invalid_decisions = 0
         self.total_invalid_decisions = 0
         self.held_for = 0
@@ -47,6 +48,7 @@ class StockTradingEnv(gym.Env):
         self.available_balance = self.initial_account_balance
         self.profit = 0
         self.net_profit = 0
+        self.unrealized_profit = 0
         self.open_positions = {}
         self.num_trades_long = 0
         self.num_trades_short = 0
@@ -64,11 +66,13 @@ class StockTradingEnv(gym.Env):
         cur_price = self.df.loc[self.current_step, '_Close'].item()
 
         reward += self.profit * 10 if self.profit > 0 else self.profit
+        if self.profit == 0:
+            reward -= self.unrealized_profit
         # reward += 0.01 if 0.3 <= self.long_trade_pct <= 0.6 else -0.01
 
         reward -= self.invalid_decisions * 0.001 * cur_price  # make it hurt
         reward -= 1 if len(self.open_positions) == 0 else 0  # penalize not trading
-        reward -= self.current_step * 0.1 if self.num_trades_long == 0 else 0
+        reward -= (self.current_step - self.lag) * 0.1 if self.num_trades_long == 0 else 0
         reward -= ((self.held_for - 1) * 0.1)
 
         # TODO allow short holds, but ramp up the penalty. bigger penalty increases if price is lower than cost basis
@@ -89,51 +93,24 @@ class StockTradingEnv(gym.Env):
         signal = self.df.loc[self.current_step, 'signal'].item()
         rs = self.df.loc[self.current_step, 'rs'].item()
 
-        env_4 = 1 if self.long_trade_pct else 0
+        env_4 = 1 if self.long_short_ratio else 0
 
         open_num = len(self.open_positions)
         open_val = sum([x[1] for x in self.open_positions.values()])
 
-        unrealized_profit = 0
+        #unrealized_profit = 0
         if open_num > 0:
+            cur_price = self.df.loc[self.current_step, '_Close'].item()
             position_value = sum([x[1] for x in self.open_positions.values()])
             cur_quantity = sum([x[0] for x in self.open_positions.values()])
-            cur_price = self.df.loc[self.current_step, '_Close'].item()
-            cur_value = cur_quantity * cur_price
-            unrealized_profit = (cur_value - position_value) * (1 - self.trading_cost)
+            cur_value = cur_quantity * (1 - self.trading_cost) * cur_price
+            self.unrealized_profit = (cur_value - position_value)
 
         obs = np.array([close, volume, sma30, ema30, cma, bollinger_lower,
                         bollinger_upper, macd, signal, rs, env_4,
-                        open_num, open_val, unrealized_profit, self.max_positions])
+                        open_num, open_val, self.unrealized_profit, self.max_positions])
 
         return obs
-
-    # Calculate open positions value
-    def _calculate_open_value(self):
-        open_trades_value = 0
-        counts = 0
-        for qty in self.open_quantities:
-            acquisition_price = self.open_prices[counts]
-            open_trades_value += acquisition_price * qty
-            counts += 1
-        return open_trades_value
-
-    # Calculate net profit
-    def _profit_calculation(self, current_price, calc_type):
-        open_trades_value = self._calculate_open_value()
-        total_quantity_held = sum(self.open_quantities)
-        current_value = total_quantity_held * current_price
-        gross_profit = current_value - open_trades_value
-
-        if calc_type == 'close_position':
-            trading_costs = current_value * self.trading_costs_rate
-            self.trading_costs += trading_costs
-        elif calc_type == 'hold_position' or calc_type == 'open_position':
-            trading_costs = open_trades_value * self.trading_costs_rate
-
-        net_profit = gross_profit - trading_costs
-
-        return net_profit
 
     # Action Management
     def _take_action(self, action):
@@ -145,33 +122,32 @@ class StockTradingEnv(gym.Env):
         if action == 0:
             if len(self.open_positions) < self.max_positions:
                 capital = self.percent_capital * self.available_balance
-                value = capital * (1 - self.trading_cost)
-                coins = value / current_price
+                coins = (capital / current_price) * (1 - self.trading_cost)
+                value = coins * current_price
                 self.open_positions.update({self.current_step: (coins, value)})  # TODO logic for binance success/failure
                 self.available_balance -= capital
                 self.num_trades_long += 1
+                #print('Buy:', capital, current_price, coins, value)
             else:
-                pass
-                #self.invalid_decisions += 1
-                #self.total_invalid_decisions += 1
+                # self.invalid_decisions += 1
+                self.total_invalid_decisions += 1
 
         # Go Short
         if action == 1:
             if len(self.open_positions) > 0:
                 position_value = sum([x[1] for x in self.open_positions.values()])
                 cur_quantity = sum([x[0] for x in self.open_positions.values()])
-                cur_price = self.df.loc[self.current_step, '_Close'].item()
-                cur_value = cur_quantity * cur_price
-                self.profit = (cur_value - position_value) * (1 - self.trading_cost)
+                cur_value = cur_quantity * (1 - self.trading_cost) * current_price
+                self.profit = (cur_value - position_value)
+                self.net_profit += self.profit
+                self.available_balance += cur_value
                 self.open_positions.clear()
                 self.held_for = 0
-                self.net_profit += self.profit
-                self.available_balance += self.profit
                 self.num_trades_short += 1
+                #print('Sell:', cur_quantity, current_price, cur_value, position_value, self.profit, self.available_balance)
             else:
-                pass
-                #self.invalid_decisions += 1
-                #self.total_invalid_decisions += 1
+                # self.invalid_decisions += 1
+                self.total_invalid_decisions += 1
 
         # Hold
         if action == 2:

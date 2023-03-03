@@ -96,6 +96,5 @@ def get_raw_transactions():
     return jsonify(results), 200
 
 
-
 if __name__ == '__main__':
     app.run(port=4000)
