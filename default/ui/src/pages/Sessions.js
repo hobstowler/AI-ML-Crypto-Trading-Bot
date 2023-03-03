@@ -5,29 +5,18 @@ import SessionDetail from "../components/SessionDetail";
 import TransactionList from "../components/TransactionList";
 
 export default function Sessions() {
-  const [sessions, setSessions] = useState([]);
-  const [activeSession, setActiveSession] = useState(null);
-
-  useEffect(() => {
-    getSessions();
-  }, [])
-
-  const getSessions = () => {
-
-  }
-
-  const refreshSessions = () => {
-    getSessions();
-  }
+  const [activeSessionId, setActiveSessionId] = useState(0);
 
   return (
-    <div>
-      <SessionNavigator/>
-      <div>
-        <SessionGraph/>
-        <TransactionList/>
+    <div className="sessionPage">
+      <SessionNavigator activeSession={activeSessionId} setActiveSessionId={setActiveSessionId}/>
+      <div className="sessionMid">
+        <SessionGraph sessionId={activeSessionId} />
       </div>
-      <SessionDetail/>
+      <div className="sessionDetails">
+        <SessionDetail sessionId={activeSessionId} />
+        <TransactionList sessionId={activeSessionId} />
+      </div>
     </div>
   )
 }
