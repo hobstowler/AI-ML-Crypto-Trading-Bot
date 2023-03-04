@@ -3,8 +3,11 @@ import numpy as np
 
 
 class RLDataPrepper:
-    def __init__(self, file, interval):
-        df = pd.read_csv(file)
+    def __init__(self, interval, file: str = None, df: pd.DataFrame = None):
+        if file is not None:
+            df = pd.read_csv(file)
+        elif df is None:
+            raise Exception
         self.interval = interval
         self.original = df
         self.df = df[['Close', 'asset volume']]

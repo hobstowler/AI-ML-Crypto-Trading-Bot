@@ -1,3 +1,5 @@
+import math
+
 import pandas as pd
 import numpy as np
 import gym
@@ -24,6 +26,7 @@ class StockTradingEnv(gym.Env):
         self.open_positions = {}
         self.num_trades_long = 0
         self.num_trades_short = 0
+        self.num_holds = 0
         self.long_short_ratio = 0
         self.invalid_decisions = 0
         self.total_invalid_decisions = 0
@@ -41,7 +44,7 @@ class StockTradingEnv(gym.Env):
         self.action_space = spaces.Discrete(3)
 
         # Prices contains the Close and Close Returns etc
-        self.observation_space = spaces.Box(low=-1, high=1, shape=(15,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=-1, high=1, shape=(16,), dtype=np.float32)
 
     # Reset Environment
     def reset(self):
@@ -52,6 +55,7 @@ class StockTradingEnv(gym.Env):
         self.open_positions = {}
         self.num_trades_long = 0
         self.num_trades_short = 0
+        self.num_holds = 0
         self.invalid_decisions = 0
         self.total_invalid_decisions = 0
         self.held_for = 0
@@ -65,15 +69,16 @@ class StockTradingEnv(gym.Env):
         reward = 0
         cur_price = self.df.loc[self.current_step, '_Close'].item()
 
-        reward += self.profit * 10 if self.profit > 0 else self.profit
+        reward += self.profit * np.log(self.held_for + 1)
         if self.profit == 0:
-            reward -= self.unrealized_profit
+            reward += self.unrealized_profit * np.log(self.held_for + 1)
         # reward += 0.01 if 0.3 <= self.long_trade_pct <= 0.6 else -0.01
 
-        reward -= self.invalid_decisions * 0.001 * cur_price  # make it hurt
-        reward -= 1 if len(self.open_positions) == 0 else 0  # penalize not trading
-        reward -= (self.current_step - self.lag) * 0.1 if self.num_trades_long == 0 else 0
-        reward -= ((self.held_for - 1) * 0.1)
+        # reward -= self.invalid_decisions * 0.001 * cur_price  # make it hurt
+        # reward -= 0.01 if len(self.open_positions) == 0 else 0  # penalize not trading
+        reward -= ((self.current_step - self.lag) * 0.05) ** 2 if len(self.open_positions) == 0 else 0
+        reward -= ((self.held_for - 1) * 0.05) ** 3
+        reward -= self.total_invalid_decisions * 0.01
 
         # TODO allow short holds, but ramp up the penalty. bigger penalty increases if price is lower than cost basis
         # TODO add velocity to holding penalty?
@@ -107,8 +112,8 @@ class StockTradingEnv(gym.Env):
             self.unrealized_profit = (cur_value - position_value)
 
         obs = np.array([close, volume, sma30, ema30, cma, bollinger_lower,
-                        bollinger_upper, macd, signal, rs, env_4,
-                        open_num, open_val, self.unrealized_profit, self.max_positions])
+                        bollinger_upper, macd, signal, rs, env_4, open_num, open_val,
+                        self.invalid_decisions, self.unrealized_profit, self.max_positions])
 
         return obs
 
@@ -151,7 +156,7 @@ class StockTradingEnv(gym.Env):
 
         # Hold
         if action == 2:
-            pass
+            self.num_holds += 1
 
         # Update metrics
         if self.num_trades_long > 0 and self.num_trades_short > 0:

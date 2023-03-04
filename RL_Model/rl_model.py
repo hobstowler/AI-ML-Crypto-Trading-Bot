@@ -59,7 +59,7 @@ def plot_learning_curve(x, scores, figure_file):
 
 
 def train_model(n_episodes: int, csv: str, interval: str):
-    data_prepper = RLDataPrepper(csv, interval)
+    data_prepper = RLDataPrepper(interval, file=csv)
     df = data_prepper.do_it_all()
 
     env = StockTradingEnv(df, INITIAL_ACCOUNT_BALANCE, TRADING_COSTS_RATE,
@@ -88,8 +88,8 @@ def train_model(n_episodes: int, csv: str, interval: str):
     n_steps = 0
 
     dw = DatastoreWrapper()
-    session_id = dw.create_session(**{"session_name": "RL train session", "type": "training", "model_name": "RL Model",
-                                      "starting_balance": 0.0, "starting_coins": 0.0, "crypto_type": "BTC"})
+    #session_id = dw.create_session(**{"session_name": "RL train session", "type": "training", "model_name": "RL Model",
+    #                                  "starting_balance": 0.0, "starting_coins": 0.0, "crypto_type": "BTC"})
 
     print("... starting ...")
     for i in range(n_episodes):
@@ -118,9 +118,9 @@ def train_model(n_episodes: int, csv: str, interval: str):
             agent.save_models()
 
         print(f"episode: {i+1}, score: {score:.2f}, avg score: {avg_score:.2f}, time_steps (current/total): {env.current_step - env.lag}/{n_steps}, learning steps: {learn_iters}")
-        print(f"\ttrades (l/s): {env.num_trades_long}/{env.num_trades_short}, profit: {env.net_profit:.2f}, invalid decisions: {env.total_invalid_decisions}")
+        print(f"\ttrades (l/s/h): {env.num_trades_long}/{env.num_trades_short}/{env.num_holds}, profit: {env.net_profit:.2f}, invalid decisions: {env.total_invalid_decisions}")
 
-        dw.create_transaction(i+1, 'training', session_id, **{"score": score, "average score": avg_score, "net profit": env.net_profit})
+        #dw.create_transaction(i+1, 'training', session_id, **{"score": score, "average score": avg_score, "net profit": env.net_profit})
 
         if (i + 1) % 10 == 0:
             x = [i + 1 for i in range(len(score_history))]
@@ -128,7 +128,7 @@ def train_model(n_episodes: int, csv: str, interval: str):
 
 
     def test_model(test_csv, interval):
-        data_prepper = RLDataPrepper(test_csv, '1h')
+        data_prepper = RLDataPrepper('1h', file=test_csv)
         df = data_prepper.do_it_all(False)
 
 
