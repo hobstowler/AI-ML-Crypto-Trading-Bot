@@ -94,7 +94,7 @@ def generate_full_indicies(total_len, seq_len, train_split=0.8, val_split=0.1, t
 
     return all_indicies
 
-def normalize_data(df):
+def normalize_data(df, scaler=None):
     '''
     Normalize every column that is a number type in the dataframe.
     '''
@@ -106,9 +106,10 @@ def normalize_data(df):
             number_columns.append(column)
 
     # Normalize the data
-    scaler = MinMaxScaler()
+    if scaler == None:
+        scaler = MinMaxScaler()
     df[number_columns] = scaler.fit_transform(df[number_columns])
-    return df
+    return df, scaler
 
 def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
     """
@@ -127,7 +128,7 @@ def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, t
     df = pandas.read_csv(input_file)
 
     # Normalize the data
-    df = normalize_data(df)
+    df, scaler = normalize_data(df)
 
     all_indicies = generate_full_indicies(len(df), seq_len, train_split, val_split, test_split, seed)
 
@@ -142,6 +143,8 @@ def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, t
     train_df.to_csv(f"./train_{seq_len}.csv", index=False)
     val_df.to_csv(f"./val_{seq_len}.csv", index=False)
     test_df.to_csv(f"./test_{seq_len}.csv", index=False)
+    
+    return scaler
 
 def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
     """

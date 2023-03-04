@@ -132,3 +132,7 @@ dmypy.json
 .vim
 .venv
 .DS_Store
+.vscode
+
+# npm modules
+default/ui/node_modules/
