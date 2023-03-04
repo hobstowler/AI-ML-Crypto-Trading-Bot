@@ -13,7 +13,7 @@ export default function SessionListItem({session, setActiveSession, deleteSessio
   return (
     <div className={active ? "sessionListItemActive" : "sessionListItem"} onClick={setActive}>
       <h3><div>{session.session_name}</div>
-        {active ? <div className="deleteSession"><HiTrash/></div> : null}</h3>
+        {active ? <div className="deleteSession" onClick={del_self}><HiTrash/></div> : null}</h3>
       <div className="sessionInfo">
         <div>{session.model_name ? session.model_name : "<null>"}</div>
           <div><pre> | </pre></div>

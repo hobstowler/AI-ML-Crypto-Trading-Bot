@@ -32,13 +32,22 @@ def get_sessions():
     return '', 500
 
 
-@app.route('/session/<id>', methods=['GET'])
+@app.route('/session/<id>', methods=['GET', 'DELETE'])
 def get_session_by_id(id):
-    resp = requests.get(f'{URL}session/{id}')
-    if resp.status_code == 200:
-        return resp.json()
+    if request.method == 'GET':
+        resp = requests.get(f'{URL}session/{id}')
+        if resp.status_code == 200:
+            return resp.json()
+        else:
+            return '', resp.status_code
     else:
-        return '', resp.status_code
+        return delete_session(id)
+
+
+def delete_session(id):
+    resp = requests.delete(f'{URL}session/{id}')
+    print(resp)
+    return '', resp.status_code
 
 
 @app.route('/transactions', methods=['GET'])

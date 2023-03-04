@@ -29,7 +29,16 @@ export default function SessionNavigator({activeSession, setActiveSessionId}) {
   }
 
   const deleteSession = (sessionId, i) => {
-    fetch('/delete/')
+    fetch(`/session/${sessionId}`, {
+      method: 'DELETE'
+    })
+      .then(response => {
+        if (!response.ok) throw Error('Invalid response')
+        else {
+          refreshSessions()
+        }
+      })
+      .catch(error => console.log(error))
 
   }
 

@@ -55,7 +55,6 @@ html, body, #root, .App {
 .sessionPage {
   width: 100%;
   height: auto;
-  min-height: 100%;
   display: inline-flex;
   flex-direction: row;
   justify-content: flex-start;
@@ -194,7 +193,7 @@ tr td {
 
 .sessions {
   padding-left: 8px;
-  height: 800px;
+  height: 600px;
   width: 260px;
   overflow-y: auto;
 }
