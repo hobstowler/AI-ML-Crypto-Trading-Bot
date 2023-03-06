@@ -2,22 +2,13 @@
 
 import os
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import torch as T
-import torch.nn as nn
-import torch.optim as optim
-from torch.distributions.categorical import Categorical
-import gym
-from gym import spaces
 
 from RL_Model.classes.agent import Agent
 from RL_Model.classes.environment import StockTradingEnv
-from RL_Model.classes.ppo_memory import PPOMemory
-from RL_Model.classes.actor import ActorNetwork
-from RL_Model.classes.critic import CriticNetwork
 from data.datastore_wrapper import DatastoreWrapper
-from rl_data_prep import RLDataPrepper
+from RL_Model.data.rl_data_prep import RLDataPrepper
 
 
 # ##################################################################
@@ -35,16 +26,16 @@ KILL_THRESH = 0.4  # terminate if balance too low. Acts as a percentage of initi
 N = 20
 batch_size = 10
 n_epochs = 5
-n_episodes = 500
+n_episodes = 100
 alpha = 0.0003  # learning rate
 
 # ##################################################################
 # ###  SCRIPT PARAMETERS
 # ##################################################################
-train_model = True
+train_model = False
 test_model = False
-train_csv = '../data/all_2021-01-01-2021-12-31_1d.csv'
-test_csv = '../data/all_2021-01-01-2022-12-31_1h.csv'
+train_csv = '../data/train_2021-01-01-2021-12-31_1d.csv'
+test_csv = '../data/test_2022-01-01-2022-12-31_1d.csv'
 
 
 def plot_learning_curve(x, scores, figure_file):
@@ -58,16 +49,13 @@ def plot_learning_curve(x, scores, figure_file):
     plt.show()
 
 
-def train_model(n_episodes: int, csv: str, interval: str):
+def train(n_episodes: int, csv: str, interval: str):
     data_prepper = RLDataPrepper(interval, file=csv)
     df = data_prepper.do_it_all()
 
     env = StockTradingEnv(df, INITIAL_ACCOUNT_BALANCE, TRADING_COSTS_RATE,
                           MAX_OPEN_POSITIONS, PERCENT_CAPITAL, KILL_THRESH)
-    N = 20
-    batch_size = 5
-    n_epochs = 3
-    alpha = 0.0003
+
     agent = Agent(n_actions=env.action_space.n, batch_size=batch_size,
                   alpha=alpha, n_epochs=n_epochs,
                   input_dims=env.observation_space.shape,
@@ -105,7 +93,6 @@ def train_model(n_episodes: int, csv: str, interval: str):
             agent.remember(observation, action, prob, val, reward, done)
             if n_steps % N == 0:
                 agent.learn()
-                learn_iters += 1
             observation = observation_
         print('\r', end='')
 
@@ -117,8 +104,9 @@ def train_model(n_episodes: int, csv: str, interval: str):
             best_score = avg_score
             agent.save_models()
 
-        print(f"episode: {i+1}, score: {score:.2f}, avg score: {avg_score:.2f}, time_steps (current/total): {env.current_step - env.lag}/{n_steps}, learning steps: {learn_iters}")
-        print(f"\ttrades (l/s/h): {env.num_trades_long}/{env.num_trades_short}/{env.num_holds}, profit: {env.net_profit:.2f}, invalid decisions: {env.total_invalid_decisions}")
+        #print(f"episode: {i+1}, score: {score:.2f}, avg score: {avg_score:.2f}, time_steps (current/total): {env.current_step - env.lag}/{n_steps}, learning steps: {learn_iters}")
+        #print(f"\ttrades (l/s/h): {env.num_trades_long}/{env.num_trades_short}/{env.num_holds}, profit: {env.net_profit:.2f}, invalid decisions: {env.total_invalid_decisions}")
+        print(f"episode: {i}, score: {score}, avg score: {avg_score}, best_score: {best_score}")
 
         #dw.create_transaction(i+1, 'training', session_id, **{"score": score, "average score": avg_score, "net profit": env.net_profit})
 
@@ -127,88 +115,82 @@ def train_model(n_episodes: int, csv: str, interval: str):
             plot_learning_curve(x, score_history, figure_file)
 
 
-    def test_model(test_csv, interval):
-        data_prepper = RLDataPrepper('1h', file=test_csv)
-        df = data_prepper.do_it_all(False)
+def report_probabilities(interval: str, csv: str):
+    data_prepper = RLDataPrepper(interval, file=csv)
+    reporting_df = data_prepper.do_it_all()
+
+    env = StockTradingEnv(reporting_df, INITIAL_ACCOUNT_BALANCE, TRADING_COSTS_RATE,
+                          MAX_OPEN_POSITIONS, PERCENT_CAPITAL, KILL_THRESH)
+
+    n_actions = env.action_space.n
+    input_dims = env.observation_space.shape
+
+    agent = Agent(n_actions=env.action_space.n, batch_size=batch_size,
+                  alpha=alpha, n_epochs=n_epochs,
+                  input_dims=env.observation_space.shape,
+                  actor_file=f'actor_ppo_{interval}',
+                  critic_file=f'critic_ppo_{interval}')
+    if os.path.exists(f'{os.getcwd()}\\models\\actor_ppo_{interval}') and \
+            os.path.exists(f'{os.getcwd()}\\models\\critic_ppo_{interval}'):
+        agent.load_models()
+    model = agent.actor
+
+    long_probs = []
+    short_probs = []
+    is_long = 1
+    is_short = 1
+    long_ratio = 0.5
+    obs = env.reset()
+    for step in range(0, len(reporting_df) - env.lag - 1):
+        action, prob, val = agent.choose_action(obs)
+        obs, _, _, _ = env.step(action)
+
+        state = T.tensor(obs).float()
+        dist = model(state)
+        probs = dist.probs.detach().numpy()
+
+        #print(np.argmax(probs), probs)
+
+        long_probs.append(probs[0])
+        short_probs.append(probs[1])
+
+    _, p1 = plt.subplots()
+    x = [i + 1 for i in range(len(reporting_df) - env.lag - 1)]
+    p1.plot(x, long_probs, color='red')
+    p1.plot(x, short_probs)
+    p2 = p1.twinx()
+    p2.plot(x, reporting_df[env.lag + 1:]['_Close'], color='green')
+    plt.show()
+
+
+def test(test_csv, interval):
+    data_prepper = RLDataPrepper('1d', file=test_csv)
+    df = data_prepper.do_it_all(False)
+
+
+def plot_prices():
+    data_prepper = RLDataPrepper('1d', file=train_csv)
+    df = data_prepper.do_it_all(False)
+    data_prepper2 = RLDataPrepper('1d', file=test_csv)
+    df2 = data_prepper2.do_it_all(False)
+
+    x = [i + 1 for i in range(len(df))]
+    x2 = [i + 1 + len(df) for i in range(len(df2))]
+    plt.plot(x, df['Close'])
+    plt.plot(x, df['bollinger_upper'])
+    plt.plot(x, df['bollinger_lower'])
+    plt.plot(x2, df2['Close'])
+    plt.plot(x2, df2['bollinger_upper'])
+    plt.plot(x2, df2['bollinger_lower'])
+    plt.show()
 
 
 if __name__ == '__main__':
     if train_model:
-        train_model(n_episodes, train_csv, '1d')
+        train(n_episodes, train_csv, '1d')
 
     if test_model:
         pass
-    """
-    data_prepper = RLDataPrepper(test_csv, '1h')
-    df = data_prepper.do_it_all(False)
-    x = [x + 1 for x in range(len(df))]
-    plt.plot(x, df['Close'])
-    plt.plot(x, df['bollinger_upper'])
-    plt.plot(x, df['bollinger_lower'])
-    plt.show()
-    data_prepper = RLDataPrepper('../data/all_2021-01-01-2022-12-31_1h.csv', '1h')
-    df = data_prepper.do_it_all()
 
-    env = StockTradingEnv(df, INITIAL_ACCOUNT_BALANCE, TRADING_COSTS_RATE,
-                          MAX_OPEN_POSITIONS, PERCENT_CAPITAL, KILL_THRESH)
-    agent = Agent(n_actions=env.action_space.n, batch_size=batch_size, alpha=alpha,
-                  n_epochs=n_epochs, input_dims=env.observation_space.shape)
-
-    if os.path.exists(f'{os.getcwd()}\\tmp\\actor_torch_ppo_sine_new') and \
-        os.path.exists(f'{os.getcwd()}\\tmp\\critic_torch_ppo_sine_new'):
-        agent.load_models()
-
-    best_score = env.reward_range[0]
-    trade_history = []
-    score_history = []
-    profit_history = []
-    net_worth_history = []
-    step_history = []
-    learn_iters = 0
-    avg_score = 0
-    n_steps = 0
-
-    print('...starting...')
-    for i in range(n_episodes):
-        observation = env.reset()
-        done = False
-        score = 0
-        e_steps = 0
-        while not done:
-            print(f'\r{e_steps}/{env.max_steps}', end='')
-            action, prob, val = agent.choose_action(observation)
-            observation_, reward, done, info = env.step(action)
-            n_steps += 1
-            e_steps += 1
-            score += reward
-            agent.remember(observation, action, prob, val, reward, done)
-            if n_steps % N == 0:
-                agent.learn()
-                learn_iters += 1
-            observation = observation_
-        print('\r', end='')
-
-        # Save history
-        trade_history.append(env.num_trades)
-        score_history.append(score)
-        profit_history.append(env.unrealized_profit + env.realized_profit)
-        net_worth_history.append(env.net_worth)
-        step_history.append(e_steps)
-        avg_score = np.mean(score_history[-50:])
-
-        if avg_score > best_score and i > 50:
-            best_score = avg_score
-            agent.save_models()
-
-        print(f"episode: {i+1}, score: {score:.2f}, avg score: {avg_score:.2f}, time_steps (current/total): {e_steps}/{n_steps}, learning steps: {learn_iters}")
-
-        x = [i+1 for i in range(len(score_history))]
-        plt.plot(x, score_history, label='score')
-        plt.plot(x, step_history, label='steps')
-        plt.plot(x, profit_history, label='profit')
-        plt.plot(x, net_worth_history, label='net worth')
-        plt.plot(x, trade_history, label='number of trades')
-        plt.yscale("linear")
-        plt.legend(loc='best')
-        plt.show()"""
-
+    #plot_prices()
+    report_probabilities('1d', train_csv)

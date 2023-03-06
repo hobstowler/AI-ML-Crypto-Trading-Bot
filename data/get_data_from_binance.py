@@ -31,7 +31,7 @@ test_end_dt = int(datetime.strptime(test_end_dt_tm, '%Y-%m-%d %H:%M:%S').replace
 
 train = True
 test = True
-to_cloud = True
+to_cloud = False
 bucket_name = 'ai-ml-bitcoin-bot.appspot.com'
 
 symbol = 'BTCUSD'
