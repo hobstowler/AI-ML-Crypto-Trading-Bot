@@ -1,0 +1,3 @@
+,open_price,high_price,low_price,close_price,volume,close_time,quote_asset_volume,qty_transactions,taker_buy_base_asset_volume,taker_buy_quote_asset_volume,ignore
+0,22051.1,22115.03,21937.52,22054.93,4.08257,1678078799999.0,90547.2322092,98.0,2.34473,52005.4625191,0.0
+1,22555.78,22594.99,22472.35,22554.56,687.12414,1678247999999.0,15260257.81168574,8765.0,341.43665,7583352.4113122,0.0
