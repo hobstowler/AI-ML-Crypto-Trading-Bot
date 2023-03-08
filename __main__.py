@@ -6,6 +6,8 @@ from scripts.train_rnn import train_rnn
 from scripts.rnn_portfolio import rnn_portfolio
 from scripts.rnn_portfolio import reset_balances
 
+TRADING_LOOPS = 1000
+
 def main():
 #    export_candlestick_data(
 #        ticker_symbol="BTCUSDT", 
@@ -18,7 +20,7 @@ def main():
 #    train_rnn()
 #    rnn_next_candle()
     reset_balances()
-    while True:
+    for i in range(TRADING_LOOPS):
         rnn_portfolio()
         sleep(60)
 

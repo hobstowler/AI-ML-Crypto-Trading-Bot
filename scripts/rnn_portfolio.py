@@ -76,7 +76,7 @@ def update_datastore_session(id, trade_decision):
         usdt_balance=usdt_balance
     )
     session = datastore.get_session_by_id(session_id=id)
-    ending_balance = get_current_balance()
+    ending_balance = current_bal
     coins_bought = int(session.get("coins_bought"))
     coins_sold = int(session.get("coins_sold"))
     number_of_trades = int(session.get("number_of_trades"))
