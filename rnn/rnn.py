@@ -283,6 +283,22 @@ class Net(nn.Module):
         next_close_price = self.denormalize_close_price(output.iloc[-1, 3])
         
         return next_close_price
+
+    def get_trade_decision(self):
+        binance = binance_api.BinanceAPI()
+        btc_info = binance.get_client().get_symbol_ticker(symbol="BTCUSDT")
+        current_price = float(btc_info.get("price"))
+        print(f"current price: {current_price}")
+        next_close = self.get_next_close_price()
+        print(f"next close: {next_close}")
+        diff = next_close - current_price
+        pct_change = (diff / current_price) * 100
+        print(f"percent change: {pct_change}")
+        if pct_change > 0.5:
+            return 1
+        if pct_change < -0.5:
+            return -1
+        return 0
     
     def load_alpha(self):
         self.load("rnn/saved_rnn_models/alpha.rnn")
