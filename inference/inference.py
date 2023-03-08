@@ -34,14 +34,14 @@ print("Finished blueprint in inference")
 
 def lstm_inference_pipeline():
     print("Started Inference Pipeline")
+    binance = binance_api.BinanceAPI()
     columns = ['close_price', 'volume']
     # Collect recent bitcoin price data
-    input_data, data_len = get_recent_binance_data(context_steps=48, interval=60)
+    input_data, data_len = get_recent_binance_data(binance, context_steps=48, interval=60)
 
     print("Started data preprocessing")
     # Data preprocessing
-    normalized_data = manual_normalization(input_data)
-    print("Normalized data", normalized_data)
+    normalized_data = manual_normalization(input_data, "min_max.csv")
     input_tensors = inference_df_to_tensor(normalized_data, data_len, columns)
 
     print("Started inference")
@@ -57,9 +57,12 @@ def lstm_inference_pipeline():
     # Make trade decision
     trade_decision = make_trade_decision(inputs_for_prediction, denormalized_predictions)
 
-    print("Inputs for prediction", inputs_for_prediction)
+    # Make trade 
+    print("Last input", inputs_for_prediction[-1][-1])
     print("Predictions", denormalized_predictions)
     print("Trade decision", trade_decision)
+    binance.render_trade_decision("BTCUSDT", .001, trade_decision)
+    print(binance.get_account_balances())
 
     # Update Binance account
 
@@ -67,26 +70,26 @@ def lstm_inference_pipeline():
 
     return '', 200
 
-def get_recent_binance_data(context_steps=48, interval=60):
+def get_recent_binance_data(binance, context_steps=48, interval=60):
     # get most recent times
     current = datetime.datetime.utcnow()
 
     start = current - datetime.timedelta(minutes=context_steps*interval)
-    print("Time delta", datetime.timedelta(minutes=context_steps*interval))
-    print(current)
-    print(start)
     start = datetime.datetime.strftime(
         start, "%Y-%m-%d %H:%M:%S")
     current = datetime.datetime.strftime(
         current, "%Y-%m-%d %H:%M:%S")
 
     # get recent data from binance
+    print("Loading data from binanace api")
     binance = binance_api.BinanceAPI()
+    print("Finished loading binance api")
     data = binance.get_candlestick_dataframe(
         ticker_symbol="BTCUSDT",
         start_time=start,
         end_time=current,
         time_inteval_in_minutes=interval)
+    print("Finished loading data from binance")
     data_len = len(data)
     
     print("Writing to csv")

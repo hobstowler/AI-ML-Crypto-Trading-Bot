@@ -11,6 +11,7 @@ class BinanceAPI:
     def __init__(self) -> None:
         self._keys = BinanceKeys()
         self._client = Client(self._keys.get_api_key(), self._keys.get_api_secret(), testnet=True)
+        print("Done loading binance keys")
 
     def print_exchange_info(self):
         print(self._client.get_exchange_info())
@@ -111,3 +112,87 @@ class BinanceAPI:
         """
         pandas_dataframe.to_csv(csv_filepath)
         return
+    
+    def get_client(self) -> Client:
+        """
+        Returns the Binance client.
+        Returns:
+            Client: the Binance SPOT Test Network client.
+        """
+        return self._client
+    
+    def update_account_info(self):
+        """
+        Retrieves account information from Binance SPOT Test Network and
+            updates the class property
+        """
+        client = self.get_client()
+        account_info = client.get_account()
+        self._account_info = account_info
+
+    def get_account_information(self) -> dict:
+        """
+        Returns the current account information.
+        """
+        self.update_account_info()
+        return self._account_info
+
+    def get_account_balances(self, assets: list=["all"]) -> list:
+        """
+        Returns the account balances for ```assets``` as a list of dictionary 
+            values. By default, this will return a list of all balances for 
+            the account.
+            
+            Example assets:
+                "BNB",
+                "BTC",
+                "BUSD",
+                "ETH",
+                "LTC",
+                "TRX",
+                "USDT",
+                "XRP"
+        Args:
+            assets (list, optional): a list of strings for the assets requested
+                to see. Defaults to ["all"].
+        Returns:
+            list: a list of dictionaries for each asset requested
+        """
+        info = self.get_account_information()
+        balances = info.get("balances", [])
+        result = []
+        if "all" in assets:
+            return balances
+        for dictionary in balances:
+            if dictionary.get("asset") in assets:
+                result.append(dictionary)
+        return result
+
+    def buy_asset(self, symbol: str, quantity: float):
+        client = self.get_client()
+        order_response = client.order_market_buy(
+            symbol=symbol, quantity=quantity, newOrderRespType="FULL", 
+            recvWindow=1000)
+        return order_response
+    
+    def sell_asset(self, symbol: str, quantity: float):
+        client = self.get_client()
+        order_response = client.order_market_sell(
+            symbol=symbol, quantity=quantity, newOrderRespType="FULL",
+            recvWindow=1000)
+        return order_response
+
+    def render_trade_decision(
+        self, symbol: str, quantity: float, trade_decision: int
+    ):
+        # trade decision constants
+        BUY = 1
+        HOLD = 0
+        SELL = -1
+
+        if trade_decision == HOLD:
+            return {}
+        if trade_decision == BUY:
+            return self.buy_asset(symbol=symbol, quantity=quantity)
+        if trade_decision == SELL:
+            return self.sell_asset(symbol=symbol, quantity=quantity)

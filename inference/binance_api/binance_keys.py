@@ -1,14 +1,23 @@
-# these keys are hard coded for Tyler's personal account for now, we should swap these out
-# when we have a project account set up
-API_KEY = "DJvRLFOnlYgSKMFHzigoF2QGBL1AZXz0BsGm8ML168mC8zSoSOjOkq3GT5NhSRll"
-API_SECRET = "2SA3MkbKncuKZ7aLbNfw7BZpUOelPAagNSAfKFgJF8uIkra1EvSB3wzBmBx46KCt" 
+from google.cloud import secretmanager
 
+class Project:
+    def __init__(self, project_id=None) -> None:
+        self.secret_client = secretmanager.SecretManagerServiceClient()
+
+        self.project_id = '638911377324' if project_id is None else project_id
+
+    def get_secret(self, secret_name, version='latest') -> str:
+        response = self.secret_client.access_secret_version(request={
+            'name': f'projects/{self.project_id}/secrets/{secret_name}/versions/{version}'
+        })
+        return response.payload.data.decode('UTF-8')
 
 class BinanceKeys:
     
     def __init__(self) -> None:
-        self._api_key = API_KEY
-        self._api_secret = API_SECRET
+        ProjectSecrets = Project()
+        self._api_key = ProjectSecrets.get_secret('binance-api-key-ken')
+        self._api_secret = ProjectSecrets.get_secret('binance-api-secret-ken')
         
     def get_api_key(self):
         return self._api_key

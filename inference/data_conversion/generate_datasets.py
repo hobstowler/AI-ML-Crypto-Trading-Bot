@@ -292,7 +292,6 @@ def denormalize_data(predictions, normalization_file, column_names):
 def inference_df_to_tensor(df, seq_len, columns=[]):
 
     tensor = np.zeros((1, seq_len, len(columns)))
-    print(df.head)
     tensor[0] = df[columns].to_numpy()
     torch_tensor = torch.from_numpy(tensor)
 

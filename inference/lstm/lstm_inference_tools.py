@@ -57,13 +57,12 @@ def run_lstm_inference(hyperparams, model_path, input_tensors, pred_len):
 
     return prediction
 
-def make_trade_decision(input, prediction, threshold=0.05, idx=0):
+def make_trade_decision(input, prediction, threshold=0.0005, idx=0):
     """
     Generate a trade decision based on the input and prediction.
     """
 
     # Get the last value of the input and prediction
-    print("Input: ", input)
     input_last = input[0,-1,idx]
     pred_last = prediction[0,-1,idx]
 
