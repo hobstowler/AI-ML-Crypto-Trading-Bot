@@ -1,3 +1,4 @@
+print("Start of binance api file")
 from binance.client import Client
 print("Started binance api import")
 from binance_api.binance_keys import BinanceKeys
@@ -190,9 +191,13 @@ class BinanceAPI:
         HOLD = 0
         SELL = -1
 
+        print("Running trade decision")
+
         if trade_decision == HOLD:
             return {}
         if trade_decision == BUY:
+            print("Starting buy asset")
             return self.buy_asset(symbol=symbol, quantity=quantity)
         if trade_decision == SELL:
+            print("Starting sell asset")
             return self.sell_asset(symbol=symbol, quantity=quantity)

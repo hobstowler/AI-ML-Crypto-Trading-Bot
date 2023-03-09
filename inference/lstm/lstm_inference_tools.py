@@ -98,7 +98,7 @@ def lstm_inference_demo(input_tensors):
     model_path = 'lstm/models/model_test_1.pt'
 
     print("Starting predictions")
-    predictions = run_lstm_inference(hyperparams, model_path, input_tensors, pred_len=6)
+    predictions = run_lstm_inference(hyperparams, model_path, input_tensors, pred_len=1)
     print("Finished predictions")
 
     #print("Inference input", input)
