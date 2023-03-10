@@ -21,8 +21,11 @@ def main():
 #    rnn_next_candle()
     reset_balances()
     for i in range(TRADING_LOOPS):
-        rnn_portfolio()
-        sleep(60)
+        print(f"Step {i + 1} ----------------")
+        rnn_portfolio(step_num=(i + 1))
+        sleep_time = 60
+        print(f"\nSleeping for {sleep_time} seconds...")
+        sleep(sleep_time)
 
 if __name__ == "__main__":
     main()

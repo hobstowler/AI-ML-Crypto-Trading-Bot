@@ -19,29 +19,33 @@ CRYPTO_TYPE = "BTC/USDT"
 # NUMBER_OF_TRADES = 6
 
 
-
 rnn = Net()
 datastore = DatastoreWrapper()
 binance = BinanceAPI()
 
-def rnn_portfolio():
+def rnn_portfolio(step_num: int):
+    print()
     id = SESSION_ID
     session_exists = check_session_exists()
     if not session_exists:
+        print("Session does not exist.\nCreating new session.")
         id = create_session()
+    print("Loading RNN Alpha Model.")
     rnn.load_alpha()
+    print("Requesting trading decision from RNN...")
     rnn_trade_decision = rnn.get_trade_decision()
+    print(f"Trade decision -> {rnn_trade_decision}")
     binance.render_trade_decision(
         symbol="BTCUSDT",
         quantity=0.001,
         trade_decision=rnn_trade_decision
     )
-    update_datastore_session(id, rnn_trade_decision)
+    update_datastore_session(id, rnn_trade_decision, step_num)
     
 def reset_balances():
     btc_balance = float(get_balance_btc())
     btc_to_sell = round((btc_balance - 1), 8)
-    print(f"bitcoin to sell: {btc_to_sell}")
+    # print(f"bitcoin to sell: {btc_to_sell}")
     if btc_to_sell > 0:
         trade_decision = -1
     if btc_to_sell < 0:
@@ -54,26 +58,28 @@ def reset_balances():
         trade_decision=trade_decision
     )
     
-def update_datastore_session(id, trade_decision):
+def update_datastore_session(id, trade_decision, step_num):
     btc_price = get_btcusdt_price()
     current_bal = get_current_balance()
+    account_value_hold = float(datastore.starting_usdt_balance)
+    account_value_hold += float(get_btcusdt_price())
     btc_balance = get_balance_btc()
     usdt_balance = get_balance_usdt()
-    trade_decision = trade_decision * 1000
     # transaction_info = [
     #     {"btc_price": btc_price},
     #     {"trade_decision": trade_decision},
     #     {"account_value": current_bal},
     # ]
     datastore.create_transaction(
-        step=1,
+        step=step_num,
         transaction_type="trade",
         session_id=id,
-        btc_price=btc_price,
-        trade_decision=trade_decision,
-        account_value=current_bal,
-        btc_balance=btc_balance,
-        usdt_balance=usdt_balance
+        # btc_price=btc_price,
+        # trade_decision=trade_decision,
+        account_value_with_model=current_bal,
+        account_value_hold_only=account_value_hold
+        # btc_balance=btc_balance,
+        # usdt_balance=usdt_balance
     )
     session = datastore.get_session_by_id(session_id=id)
     ending_balance = current_bal
@@ -81,10 +87,10 @@ def update_datastore_session(id, trade_decision):
     coins_sold = int(session.get("coins_sold"))
     number_of_trades = int(session.get("number_of_trades"))
     ending_coins = get_balance_btc()
-    if trade_decision == 1000:
+    if trade_decision == 1:
         coins_bought += 1
-    if trade_decision == -1000:
-        coins_sold -= 1
+    if trade_decision == -1:
+        coins_sold += 1
     if trade_decision != 0:
         number_of_trades += 1
     print(
@@ -133,11 +139,15 @@ def get_btcusdt_price():
 def get_balance_btc():
     balances = binance.get_account_balances(["BTC"])
     return balances[0].get("free")
+
+def get_total_steps(id):
+    session = datastore.get_session_by_id(session_id=id)
     
 def create_session():
     current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     current_balance = get_current_balance()
     starting_coins = get_balance_btc()
+    datastore.starting_usdt_balance = get_balance_usdt()
     id = datastore.create_session(
         session_name=SESSION_NAME,
         type=TYPE,
@@ -151,5 +161,14 @@ def create_session():
         number_of_trades=str(0)
     )
     print(f"Session created. ID = {id}")
+    print(
+        f"Session Name: {SESSION_NAME}\n"\
+        f"Type: {TYPE}\n"\
+        f"Model Name: {MODEL_NAME}\n"\
+        f"Crypto Type: {CRYPTO_TYPE}\n"\
+        f"Session Start: {current_datetime}\n"\
+        f"Starting Balance: {current_balance}\n"\
+        f"Starting Coins: {starting_coins}"
+    )
     return id
 
