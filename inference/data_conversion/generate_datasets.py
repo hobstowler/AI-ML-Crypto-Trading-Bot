@@ -1,17 +1,11 @@
-print("Starting generate_datasets.py import")
 import pandas 
 import torch
 import numpy as np
-print("Finished generate_datasets.py numpy import")
 import argparse
-print("Finished generate_datasets.py argparse import")
 import os
-print("Finished generate_datasets.py os import")
 #import sklearn
 #print("Finished generate_datasets.py sklearn import")
 import csv
-print("Finished generate_datasets.py csv import")
-print("Finished generate_datasets.py import")
 
 def get_arguments():
     '''

@@ -1,11 +1,14 @@
-print("Start of binance api file")
-from binance.client import Client
-print("Started binance api import")
-from binance_api.binance_keys import BinanceKeys
-print("Finished binance api import")
+import sys
+import binance
+sys.path.append("../")
+sys.path.append("../binance_api")
+try:
+    from binance_api.binance_keys import BinanceKeys
+except:
+    from binance_keys import BinanceKeys
 import datetime
 import pandas 
-print("Finished all imports for binance api")
+from binance.client import Client
 
 class BinanceAPI:
     
@@ -201,3 +204,11 @@ class BinanceAPI:
         if trade_decision == SELL:
             print("Starting sell asset")
             return self.sell_asset(symbol=symbol, quantity=quantity)
+
+
+
+if __name__ == '__main__':
+    # Create BinanceAPI object
+    binance_api = BinanceAPI()
+    # Print exchange info
+    print(binance_api.get_account_information())

@@ -7,7 +7,6 @@
 # pip install numpy
 # pip install pandas (Only needed if training from csv file)
 
-print("Starting lstm.py import")
 import torch
 from torch import nn, optim
 import os
@@ -15,13 +14,11 @@ import os
 import sys
 import numpy as np
 import pandas as pd
-print("Finished lstm.py pandas import")
 
 sys.path.append('../')
 sys.path.append('../lstm')
 
 from lstm.model_tools import *
-print("Finished lstm.py import")
  
 # Add parent directory to path so we can import from data_conversion
 current = os.path.dirname(os.path.realpath(__file__))

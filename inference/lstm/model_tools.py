@@ -4,25 +4,16 @@
 # pip install matplotlib
 # pip install numpy
 
-print("Starting model_tools.py import")
 import os
-print("Finished os import")
 import torch
-print("Finished torch import")
 import numpy as np
-print("Finished numpy import")
-#import matplotlib.pyplot as plt
-print("Finished matplotlib import")
 import sys
-print("Finished model_tools.py import")
 
 # Add parent path to directory so we can import from data_conversion
 sys.path.append('../')
 sys.path.append('../data_conversion')
 
-print("Starting generate_datasets.py import")
 from data_conversion.generate_datasets import tensors_from_csv
-print("Finished generate_datasets.py import")
 
 def save_model(model, optimizer, save_path):
     """

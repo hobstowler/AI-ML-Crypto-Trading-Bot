@@ -1,4 +1,5 @@
 cron:
 - description: "run lstm"
   url: /inference/lstm
-  schedule: every 1 minutes
+  target: inference
+  schedule: every 30 minutes

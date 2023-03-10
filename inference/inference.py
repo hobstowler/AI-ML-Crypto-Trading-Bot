@@ -17,21 +17,17 @@ sys.path.append('../data_conversion')
 sys.path.append('../data')
 ###### Modified here for local run ######
 #sys.path.append('../lstm')
-print("Starting imports")
 from lstm.lstm_inference_tools import lstm_inference_demo, make_trade_decision
-print("Finished lstm imports in inference")
 from binance_api import binance_api
-print("Finished binance imports in inference")
 from data_conversion.generate_datasets import inference_df_to_tensor, normalize_data, denormalize_data, manual_normalization
-print("Finished data_conversion imports in inference")
 from data import datastore_wrapper
+
+print("Finished imports in inference.py")
 
 SESSION_ID = 6209583034925056 
 
 client = datastore.Client()
 bp = Blueprint('inference', __name__, url_prefix='/inference')
-
-print("Finished blueprint in inference")
 
 
 
@@ -74,6 +70,8 @@ def lstm_inference_pipeline(session_id=SESSION_ID):
     binance_info = binance.get_account_balances()
     print("Finished binance account trade")
 
+    print("Binance account info: ", binance_info)
+
     btc_value = float(binance_info[1]['free'])
     usd_value = float(binance_info[6]['free'])
 
@@ -86,11 +84,13 @@ def lstm_inference_pipeline(session_id=SESSION_ID):
     step = 0
     print("Calculating step number")
     transactions= datastore_client.get_session_transactions(session_id)
+    print("Transactions: ", transactions)
     for transaction in transactions:
         if transaction['step'] > step:
             step = transaction['step']
     step += 1
-    # Update datastore
+    print("Finished calculating step number")
+    #Update datastore
     print("Starting datastore update")
     datastore_client.create_transaction(step, trade_type, 6209583034925056, **{
         "account_value": account_value-bitcoin_start-usd_start,
