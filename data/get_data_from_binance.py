@@ -8,7 +8,7 @@ import pytz
 import pandas as pd
 import requests
 
-from project import Project
+#from project import Project
 
 #project = Project()
 
@@ -20,9 +20,9 @@ from project import Project
 ############################################################### """
 
 # TODO clean up and make programmatic
-train_start_dt_tm = '2021-01-01 00:00:00'
+train_start_dt_tm = '2021-02-01 00:00:00'
 train_start_dt = int(datetime.strptime(train_start_dt_tm, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp() * 1000)
-train_end_dt_tm = '2021-12-31 23:59:00'
+train_end_dt_tm = '2021-05-31 23:59:00'
 train_end_dt = int(datetime.strptime(train_end_dt_tm, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp() * 1000)
 test_start_dt_tm = '2022-01-01 00:00:00'
 test_start_dt = int(datetime.strptime(test_start_dt_tm, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp() * 1000)
@@ -30,8 +30,8 @@ test_end_dt_tm = '2022-12-31 23:59:00'
 test_end_dt = int(datetime.strptime(test_end_dt_tm, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp() * 1000)
 
 train = True
-test = True
-to_cloud = False
+test = False
+to_cloud = True
 bucket_name = 'ai-ml-bitcoin-bot.appspot.com'
 
 symbol = 'BTCUSD'

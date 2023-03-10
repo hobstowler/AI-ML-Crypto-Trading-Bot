@@ -77,6 +77,8 @@ def get_transactions():
                 if key not in sorted_results.keys():
                     sorted_results[key] = [val]
                 else:
+                    if val == '-inf':
+                        val = 0
                     sorted_results[key].append(val)
 
     return jsonify(sorted_results), 200

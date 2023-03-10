@@ -5,10 +5,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch as T
 
-from RL_Model.classes.agent import Agent
-from RL_Model.classes.environment import StockTradingEnv
+from classes.agent import Agent
+from classes.environment import StockTradingEnv
 from data.datastore_wrapper import DatastoreWrapper
-from RL_Model.data.rl_data_prep import RLDataPrepper
+from data.rl_data_prep import RLDataPrepper
 
 
 # ##################################################################
@@ -34,7 +34,7 @@ alpha = 0.0003  # learning rate
 # ##################################################################
 train_model = False
 test_model = False
-train_csv = '../data/train_2021-01-01-2021-12-31_1d.csv'
+train_csv = '../data/train_2021-01-01-2021-12-31_1h.csv'
 test_csv = '../data/test_2022-01-01-2022-12-31_1d.csv'
 
 
@@ -128,10 +128,10 @@ def report_probabilities(interval: str, csv: str):
     agent = Agent(n_actions=env.action_space.n, batch_size=batch_size,
                   alpha=alpha, n_epochs=n_epochs,
                   input_dims=env.observation_space.shape,
-                  actor_file=f'actor_ppo_{interval}',
-                  critic_file=f'critic_ppo_{interval}')
-    if os.path.exists(f'{os.getcwd()}\\models\\actor_ppo_{interval}') and \
-            os.path.exists(f'{os.getcwd()}\\models\\critic_ppo_{interval}'):
+                  actor_file=f'actor_ppo_1d',
+                  critic_file=f'critic_ppo_1d')
+    if os.path.exists(f'{os.getcwd()}\\models\\actor_ppo_1h') and \
+            os.path.exists(f'{os.getcwd()}\\models\\critic_ppo_1h'):
         agent.load_models()
     model = agent.actor
 
@@ -193,4 +193,4 @@ if __name__ == '__main__':
         pass
 
     #plot_prices()
-    report_probabilities('1d', train_csv)
+    report_probabilities('1h', train_csv)
