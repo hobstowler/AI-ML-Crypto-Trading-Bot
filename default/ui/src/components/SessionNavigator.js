@@ -1,9 +1,12 @@
 import SessionListItem from "./SessionListItem";
 import {useState, useEffect} from "react";
 import {HiRefresh} from 'react-icons/hi';
+import SessionNavigatorTab from "./SessionNavigatorTab";
 
-export default function SessionNavigator(sessionList, activeSession, setActiveSession) {
-  const [sessions, setSessions] = useState([]);
+export default function SessionNavigator({activeSession, setActiveSessionId}) {
+  const [sessions, setSessions] = useState({});
+  const [sessionTypes, setSessionTypes] = useState([]);
+  const [activeSessionType, setActiveType] = useState("")
 
   useEffect(() => {
     getSessions();
@@ -12,34 +15,66 @@ export default function SessionNavigator(sessionList, activeSession, setActiveSe
   const refreshSessions = () => {getSessions();}
 
   const getSessions = () => {
-    fetch('/sessions', {
-
-    })
+    fetch('/sessions', {})
       .then(response => {
         if (!response.ok) throw Error("invalid response")
         else return response.json();
       })
       .then(json => {
-        console.log(json);
+        setSessions(json);
+        setSessionTypes(Object.keys(json));
+        setActiveType(Object.keys(json)[0]);
       })
-      .catch((error) => {
-        console.log(error);
+      .catch((error) => console.log(error))
+  }
+
+  const deleteSession = (sessionId, i) => {
+    fetch(`/session/${sessionId}`, {
+      method: 'DELETE'
+    })
+      .then(response => {
+        if (!response.ok) throw Error('Invalid response')
+        else {
+          refreshSessions()
+        }
       })
+      .catch(error => console.log(error))
+
   }
 
   return (
-    <div className="sessionNavigator">
-      <div className="sessionHeader">
-        <h2>
-          Session List
-          <div className="refreshButton" onClick={refreshSessions}><HiRefresh/></div>
-        </h2>
-      </div>
+      <div className="sessionNavigatorWrapper">
+      <table className="sessionNavigator">
+        <thead>
+          <th className="sessionHeader" colSpan={2}>
+            <h2>
+              <div>Session List</div>
+              <div className="refreshButton" onClick={refreshSessions}><HiRefresh/></div>
+            </h2>
+          </th>
+        </thead>
+        <tbody className="sessionNavigatorBody">
+          <tr>
+            <td className="sessionNavigatorTabs">
+              {sessionTypes.map((type, i) => <SessionNavigatorTab sessionType={type}
+                                                                          activeSession={type === activeSessionType ? true : false}
+                                                                          setActiveType={setActiveType}
+                                                                          key={i}
+                                                                          />)}
+            </td>
+            <td><div className="sessions">
+              {sessions[activeSessionType] ? sessions[activeSessionType].map((session, i) =>
+                <SessionListItem session={session}
+                                 active={session.id === activeSession ? true : false}
+                                 setActiveSession={setActiveSessionId}
+                                 deleteSession={deleteSession}
+                                 key={i}/>) : `No sessions of type: ${activeSessionType}`}
+            </div>
+            </td>
+          </tr>
+        </tbody>
 
-      {sessions.map((session, i) => <SessionListItem session={session}
-                                                     active={session.name === activeSession ? true : false}
-                                                     setActiveSession={setActiveSession}
-                                                     key={i}/>)}
+      </table>
     </div>
   )
 }

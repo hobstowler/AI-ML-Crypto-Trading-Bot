@@ -1,14 +1,11 @@
 from binance.client import Client
-from binance_api.binance_keys import BinanceKeys
 import datetime
 import pandas 
 
 class BinanceAPI:
     
-    def __init__(self) -> None:
-        self._keys = BinanceKeys()
-        self._client = Client(self._keys.get_api_key(), 
-                              self._keys.get_api_secret(), testnet=True)
+    def __init__(self, key: str, secret: str) -> None:
+        self._client = Client(key, secret, testnet=True)
         self._account_info = self.update_account_info()
 
     def print_exchange_info(self):
@@ -53,6 +50,7 @@ class BinanceAPI:
         self, ticker_symobol: str, start_time: str, end_time: str, 
         time_interval_in_minutes: int):
         """Retrieves past candlestick data for `ticker_symbol`.
+
         Args:
             ticker_symobol (str): e.g. `"BTCUSDT"`.
             minutes_from_now (int): quantity of minutes in the past to pull 
@@ -62,6 +60,7 @@ class BinanceAPI:
 
         Raises:
             ValueError: for incorrect argument values.
+
         Returns:
             (list): list of OHLCV values from Binance.
         """
@@ -208,3 +207,12 @@ class BinanceAPI:
             return self.buy_asset(symbol=symbol, quantity=quantity)
         if trade_decision == SELL:
             return self.sell_asset(symbol=symbol, quantity=quantity)
+
+    def connect_to_datastore(self):
+        pass
+    
+    def update_datastore(self):
+        pass
+    
+    def get_datastore_info(self):
+        pass

@@ -8,7 +8,7 @@ export default function Header() {
         <div className="navWrapper">
           <ul>
             <li><Link to="/">Home</Link></li>
-            <li><Link to="/sessions">Sessions</Link></li>
+            <li><Link to="/session_management">Sessions</Link></li>
           </ul>
         </div>
       </div>

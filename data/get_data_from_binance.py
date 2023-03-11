@@ -2,12 +2,13 @@ import os
 import sys
 import time
 from datetime import datetime, timezone
+from google.cloud import storage
 import pytz
 
 import pandas as pd
 import requests
 
-from project import Project
+#from project import Project
 
 #project = Project()
 
@@ -19,9 +20,9 @@ from project import Project
 ############################################################### """
 
 # TODO clean up and make programmatic
-train_start_dt_tm = '2017-01-01 00:00:00'
+train_start_dt_tm = '2021-02-01 00:00:00'
 train_start_dt = int(datetime.strptime(train_start_dt_tm, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp() * 1000)
-train_end_dt_tm = '2022-12-31 23:59:00'
+train_end_dt_tm = '2021-05-31 23:59:00'
 train_end_dt = int(datetime.strptime(train_end_dt_tm, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp() * 1000)
 test_start_dt_tm = '2022-01-01 00:00:00'
 test_start_dt = int(datetime.strptime(test_start_dt_tm, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp() * 1000)
@@ -30,10 +31,12 @@ test_end_dt = int(datetime.strptime(test_end_dt_tm, '%Y-%m-%d %H:%M:%S').replace
 
 train = True
 test = False
+to_cloud = True
+bucket_name = 'ai-ml-bitcoin-bot.appspot.com'
 
 symbol = 'BTCUSD'
 interval = '30m'
-intervals = ['1d', '1h', '30m', '5m', '1m']
+intervals = ['1d', '1h']
 interval_times = []
 
 for i in range(len(intervals)):
@@ -59,6 +62,10 @@ columns = ['Open time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close time', 
 #df = pd.DataFrame(columns=columns)
 
 if __name__ == '__main__':
+    if to_cloud:
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(bucket_name)
+
     if train:
         for i in range(len(intervals)):
             interval_time = interval_times[i]
@@ -80,24 +87,44 @@ if __name__ == '__main__':
                     break
 
             df = pd.concat(dataframes, ignore_index=True)
-            df.to_csv(f'{os.getcwd()}/all_{train_start_dt_tm[:10]}-{train_end_dt_tm[:10]}_{interval}.csv', index=False)
+            f_name = f'train_{train_start_dt_tm[:10]}-{train_end_dt_tm[:10]}_{interval}'
+            if to_cloud:
+                blob = bucket.blob(f_name)
+                with blob.open("w") as f:
+                    f.write(df.to_csv(index=False))
+                print(f'Wrote csv with pandas as {f_name} to {bucket_name}.')
+            else:
+                df.to_csv(f'{os.getcwd()}/{f_name}.csv', index=False)
             print(f'Finished in {time.perf_counter() - s:0.2f} seconds')
 
     if test:
-        dataframes = []
-        for i in range(test_start_dt, test_end_dt, interval_time * max_candles):
-            start = i
-            end = i + (interval_time * max_candles) - interval_time
-            end = end if end <= test_end_dt else test_end_dt
-            resp = requests.get(f'https://api.binance.us/api/v3/klines?symbol={symbol}&interval={interval}&limit={max_candles}&startTime={start}&endTime={end}')
-            if resp.status_code == 200:
-                df = pd.DataFrame(resp.json(), columns=columns)
-                dataframes.append(df)
-                #df = df.append(ndf, ignore_index=False)
-            elif resp.status_code == 429:
-                print(f'error 429: rate limit tripped at i={i}. start: {start}, end: {end}')
-                print(resp.json())
-                break
+        for i in range(len(intervals)):
+            interval_time = interval_times[i]
+            interval = intervals[i]
+            s = time.perf_counter()
+            dataframes = []
+            for i in range(test_start_dt, test_end_dt, interval_time * max_candles):
+                start = i
+                end = i + (interval_time * max_candles) - interval_time
+                end = end if end <= test_end_dt else test_end_dt
+                resp = requests.get(
+                    f'https://api.binance.us/api/v3/klines?symbol={symbol}&interval={interval}&limit={max_candles}&startTime={start}&endTime={end}')
+                if resp.status_code == 200:
+                    df = pd.DataFrame(resp.json(), columns=columns)
+                    dataframes.append(df)
+                    # df = df.append(ndf, ignore_index=False)
+                elif resp.status_code == 429:
+                    print(f'error 429: rate limit tripped at i={i}. start: {start}, end: {end}')
+                    print(resp.json())
+                    break
 
-        df = pd.concat(dataframes, ignore_index=True)
-        df.to_csv(f'{os.getcwd()}/test_{test_start_dt_tm[:10]}_{test_end_dt_tm[:10]}_{interval}.csv', index=False)
+            df = pd.concat(dataframes, ignore_index=True)
+            f_name = f'test_{test_start_dt_tm[:10]}-{test_end_dt_tm[:10]}_{interval}'
+            if to_cloud:
+                blob = bucket.blob(f_name)
+                with blob.open("w") as f:
+                    f.write(df.to_csv(index=False))
+                print(f'Wrote csv with pandas as {f_name} to {bucket_name}.')
+            else:
+                df.to_csv(f'{os.getcwd()}/{f_name}.csv', index=False)
+            print(f'Finished in {time.perf_counter() - s:0.2f} seconds')

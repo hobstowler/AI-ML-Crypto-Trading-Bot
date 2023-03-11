@@ -2,5 +2,12 @@ runtime: python39
 service: default
 
 handlers:
-- url: /
+- url: /static
+  static_dir: ui/build/static
+- url: /(.*\.(json|ico|js|html))$
+  static_files: ui/build/\1
+  upload: ui/build/.*\.(json|ico|js|html)$
+
+# backend
+- url: /.*
   script: auto
