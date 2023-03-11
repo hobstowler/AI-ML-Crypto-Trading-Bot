@@ -210,12 +210,3 @@ class BinanceAPI:
             return self.buy_asset(symbol=symbol, quantity=quantity)
         if trade_decision == SELL:
             return self.sell_asset(symbol=symbol, quantity=quantity)
-
-    def connect_to_datastore(self):
-        pass
-    
-    def update_datastore(self):
-        pass
-    
-    def get_datastore_info(self):
-        pass
