@@ -194,8 +194,6 @@ class BinanceAPI:
         HOLD = 0
         SELL = -1
 
-        print("Running trade decision")
-
         if trade_decision == HOLD:
             return {}
         if trade_decision == BUY:
