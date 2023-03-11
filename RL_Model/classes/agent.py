@@ -1,12 +1,9 @@
-import os
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 import torch as T
 
-from RL_Model.classes.actor import ActorNetwork
-from RL_Model.classes.critic import CriticNetwork
-from RL_Model.classes.ppo_memory import PPOMemory
+from .actor import ActorNetwork
+from .critic import CriticNetwork
+from .ppo_memory import PPOMemory
 
 
 class Agent:

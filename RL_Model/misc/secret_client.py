@@ -1,7 +1,7 @@
 from google.cloud import secretmanager
 
 
-class Project:
+class SecretClient:
     def __init__(self, project_id=None) -> None:
         self.secret_client = secretmanager.SecretManagerServiceClient()
 
