@@ -10,10 +10,13 @@
 import torch
 from torch import nn, optim
 import os
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import sys
 import numpy as np
 import pandas as pd
+
+sys.path.append('../')
+sys.path.append('../lstm')
 
 from lstm.model_tools import *
  
@@ -132,13 +135,13 @@ def train_loop(save_points, model_name, hyperparams, data_source_info, plot=Fals
 
     if plot:
         # First show the training and validation loss over each epoch
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss')
-        plt.plot(train_losses, label='training')
-        plt.plot(val_losses, label='validation')
-        plt.plot(pred_losses, label='prediction')
-        plt.legend()
-        plt.show()
+        # plt.xlabel('Epoch')
+        # plt.ylabel('Loss')
+        # plt.plot(train_losses, label='training')
+        # plt.plot(val_losses, label='validation')
+        # plt.plot(pred_losses, label='prediction')
+        # plt.legend()
+        # plt.show()
         
         predictions, pred_loss = predict(model, criterion, test_tensors, pred_len=6)
         vizualize_predictions(predictions, test_tensors)

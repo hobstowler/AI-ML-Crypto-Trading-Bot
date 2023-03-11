@@ -7,11 +7,11 @@
 import os
 import torch
 import numpy as np
-import matplotlib.pyplot as plt
 import sys
 
 # Add parent path to directory so we can import from data_conversion
 sys.path.append('../')
+sys.path.append('../data_conversion')
 
 from data_conversion.generate_datasets import tensors_from_csv
 
@@ -87,27 +87,27 @@ def vizualize_predictions(predictions, targets, feature_idx=0):
     grid_cols = int(np.ceil(len(predictions)/grid_rows))
     
 
-    figure, axis = plt.subplots(grid_rows, grid_cols)
+    # figure, axis = plt.subplots(grid_rows, grid_cols)
 
-    figure.suptitle('Predictions vs Targets', fontsize=16)
+    # figure.suptitle('Predictions vs Targets', fontsize=16)
 
-    for row in range(grid_rows):
-        for col in range(grid_cols):
-            index = row*grid_cols + col
-            if index < len(predictions):
-                # Build the x-values for targets
-                x_targets = np.arange(0,len(targets[0].squeeze().numpy()))
+    # for row in range(grid_rows):
+    #     for col in range(grid_cols):
+    #         index = row*grid_cols + col
+    #         if index < len(predictions):
+    #             # Build the x-values for targets
+    #             x_targets = np.arange(0,len(targets[0].squeeze().numpy()))
 
-                # Build the x-values for predictions
-                start_point = len(targets[0].squeeze().numpy()) - len(predictions[index].squeeze().numpy())
-                x_predictions = np.arange(start_point, len(x_targets))
+    #             # Build the x-values for predictions
+    #             start_point = len(targets[0].squeeze().numpy()) - len(predictions[index].squeeze().numpy())
+    #             x_predictions = np.arange(start_point, len(x_targets))
 
-                axis[row][col].scatter(x_targets, targets[index].squeeze().numpy()[:,feature_idx])
-                axis[row][col].scatter(x_predictions, predictions[index].squeeze().numpy()[:,feature_idx])
+    #             axis[row][col].scatter(x_targets, targets[index].squeeze().numpy()[:,feature_idx])
+    #             axis[row][col].scatter(x_predictions, predictions[index].squeeze().numpy()[:,feature_idx])
                 
-    plt.savefig('predictions.png')
+    # plt.savefig('predictions.png')
 
-    plt.show()
+    # plt.show()
 
 def initialize_model(model, load_path):
     """

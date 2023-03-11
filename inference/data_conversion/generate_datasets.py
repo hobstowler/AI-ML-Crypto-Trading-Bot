@@ -3,7 +3,9 @@ import torch
 import numpy as np
 import argparse
 import os
-from sklearn.preprocessing import MinMaxScaler
+#import sklearn
+#print("Finished generate_datasets.py sklearn import")
+import csv
 
 def get_arguments():
     '''
@@ -94,27 +96,76 @@ def generate_full_indicies(total_len, seq_len, train_split=0.8, val_split=0.1, t
 
     return all_indicies
 
+def get_data_types(df):
+    '''
+    Returns a list of the data types for each column in the dataframe.
+    '''
+    data_types = []
+    for column in df.columns:
+        data_types.append(df[column].dtype)
+
+    return data_types
+
 def normalize_data(df, scaler=None):
     '''
     Normalize every column that is a number type in the dataframe.
     '''
 
-
-    print("Data types", get_data_types(df))
     # Generate list of dataframe columns whos type is a number
     number_columns = []
     for column in df.columns:
         if np.issubdtype(df[column].dtype, np.number):
             number_columns.append(column)
 
-    print("All columns: ", df.columns)
-    print("Number columns: ", number_columns)
+    # Normalize the data
+    #scaler = sklearn.preprocessing.MinMaxScaler()
+
+    # if params is not None:
+    #     scaler.data_min_, scaler.data_max_, scaler.scale_ = params
+
+    #df[number_columns] = scaler.fit_transform(df[number_columns])
+
+    name = "test1"
+    # Record the normalization values
+    #record_normalization_values(scaler, f"normalization_values_{name}.csv", number_columns)
+
+    return df, #scaler
+
+def manual_normalization(df, min_max=None):
+    '''
+    Normalize every column that is a number type in the dataframe.
+    '''
+
+    # Generate list of dataframe columns whos type is a number
+    number_columns = []
+    for column in df.columns:
+        if np.issubdtype(df[column].dtype, np.number):
+            number_columns.append(column)
+    
+    # Build min_max dataframe if not provided
+    if min_max is None:
+        min_max = pandas.DataFrame(columns=number_columns)
+        min_values = []
+        max_values = []
+        for column in number_columns:
+            min_values.append(df[column].min())
+            max_values.append(df[column].max())
+
+        min_max.loc[0] = min_values
+        min_max.loc[1] = max_values
+
+        # Write min_max to file
+        min_max.to_csv("min_max.csv")
+
+    # Read min_max data and normalize the inputs
+    min_max = pandas.read_csv("min_max.csv")
+    for column in number_columns:
+        df[column] = (df[column] - min_max.loc[0, column]) / (min_max.loc[1, column] - min_max.loc[0, column])
 
     # Normalize the data
-    if scaler == None:
-        scaler = MinMaxScaler()
-    df[number_columns] = scaler.fit_transform(df[number_columns])
-    return df, scaler
+    #df[number_columns] = (df[number_columns] - data_min) / (data_max - data_min)
+
+    return df
 
 def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, test_split=0.1, norm_params=None, seed=None):
     """
@@ -137,7 +188,8 @@ def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, t
     df = pandas.read_csv(input_file)
 
     # Normalize the data
-    df, scaler = normalize_data(df)
+    df, scalar = normalize_data(df)
+
 
     all_indicies = generate_full_indicies(len(df), seq_len, train_split, val_split, test_split, seed)
 
@@ -152,10 +204,8 @@ def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, t
     train_df.to_csv(f"./train_{seq_len}.csv", index=False)
     val_df.to_csv(f"./val_{seq_len}.csv", index=False)
     test_df.to_csv(f"./test_{seq_len}.csv", index=False)
-    
-    return scaler
 
-    return scale_params
+    return scalar
 
 def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
     """
@@ -192,6 +242,47 @@ def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
 
     return tensors
 
+def record_normalization_values(scalar, output_file, number_columns):
+    """
+    Records the normalization values to a file.
+
+    Args:
+        scalar (MinMaxScaler): MinMaxScaler object containing the normalization values.
+        output_file (str): Path to the output file.
+    """
+
+    with open(output_file, 'w') as f:
+        write = csv.writer(f)
+        write.writerow(number_columns)
+        write.writerow(scalar.data_min_)
+        write.writerow(scalar.data_max_)
+        write.writerow(scalar.scale_)
+
+def denormalize_data(predictions, normalization_file, column_names):
+    """
+    De-normalizes the predictions given the normalization values.
+
+    Args:
+        predictions (numpy array): Array of predictions to de-normalize.
+        normalization_file (path): File holding the normalization values.
+        column_names (list): List of column names to use in the normalization file.
+
+    Returns:
+        numpy array: De-normalized predictions.
+    """
+
+    df = pandas.read_csv(normalization_file)
+    df = df[column_names]
+
+    data_min = df.iloc[0].to_numpy()
+    data_max = df.iloc[1].to_numpy()
+
+    predictions = predictions.detach().numpy()
+
+    predictions = predictions * (data_max - data_min) + data_min
+
+    return predictions
+
 def inference_df_to_tensor(df, seq_len, columns=[]):
 
     tensor = np.zeros((1, seq_len, len(columns)))
@@ -213,4 +304,6 @@ if __name__ == '__main__':
     args = get_arguments()
     # Call generate_csv_datasets with the cli arguments
     generate_csv_datasets(args.input_file, int(args.seq_len), float(args.train_split), 
-                            float(args.val_split), float(args.test_split), args.seed)
+                           float(args.val_split), float(args.test_split), args.seed)
+    
+
