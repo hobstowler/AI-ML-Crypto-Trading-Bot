@@ -100,7 +100,7 @@ def specific_session(session_id: str):
     elif request.method == 'PATCH':
         return edit_session(request, session)
     elif request.method == 'DELETE':
-        return delete_session(key, session)
+        return '', 501  # return delete_session(key, session)
     else:
         return '', 400
 
@@ -228,7 +228,8 @@ def transactions(session_id: str, transaction_id: str):
     elif request.method == 'PATCH':
         return edit_transaction(request, transaction)
     elif request.method == 'DELETE':
-        return delete_transaction(key)
+        return '', 501
+        #return delete_transaction(key)
     else:
         return '', 400
 
