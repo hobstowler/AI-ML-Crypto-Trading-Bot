@@ -99,16 +99,11 @@ def normalize_data(df, scaler=None):
     Normalize every column that is a number type in the dataframe.
     '''
 
-
-    print("Data types", get_data_types(df))
     # Generate list of dataframe columns whos type is a number
     number_columns = []
     for column in df.columns:
         if np.issubdtype(df[column].dtype, np.number):
             number_columns.append(column)
-
-    print("All columns: ", df.columns)
-    print("Number columns: ", number_columns)
 
     # Normalize the data
     if scaler == None:
