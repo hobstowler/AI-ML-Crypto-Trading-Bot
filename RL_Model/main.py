@@ -263,10 +263,11 @@ class RL:
                 self.balances['USDT'] > self.initial_account_balance * self.kill_thresh and \
                 self.balances['BTC'] < 0.00001:
             amount = self.balances['USDT'] * self.percent_capital
-            quantity = amount / self.df.loc['_Close'][-1:]
+            quantity = amount / self.df['_Close'].iloc[-1]
             quantity = math.floor(quantity * (10 ** 6))/ (10 ** 6)
             print(quantity)
             response = self.binance_client.buy_asset('BTCUSDT', quantity)
+            print(response)
         elif action == 1 and self.balances['BTC'] > 0.000001:
             quantity = self.balances['BTC']
             quantity = math.floor(quantity * (10 ** 6)) / (10 ** 6)
@@ -386,6 +387,20 @@ def get_state():
     if os.path.exists(state_file_path):
         with open(state_file_path, "rb") as f:
             state = pickle.load(f)
+        return jsonify(state), 200
+    return '', 404
+
+
+@app.route('/state', methods=['POST'])
+def set_state():
+    json = request.get_json()
+    state_file_path = os.path.join(os.getcwd(), 'state.p')
+    if os.path.exists(state_file_path):
+        with open(state_file_path, "rb") as f:
+            state = pickle.load(f)
+        state['step'] = json['step']
+        with open(state_file_path, "wb") as f:
+            pickle.dump(state, f)
         return jsonify(state), 200
     return '', 404
 
