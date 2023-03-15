@@ -6,20 +6,25 @@ from datetime import datetime
 SESSION_ID = None
 SESSION_NAME = "RNN Portfolio"
 TYPE = "Trading Simulation"
-MODEL_NAME = "RNN Model"
 CRYPTO_TYPE = "BTC/USDT"
-# SESSION_START = 1
-# SESSION_END = None
-# STARTING_BALANCE = 10
-# ENDING_BALANCE = 3
-# STARTING_COINS = 20
-# ENDING_COINS = 30
-# COINS_BOUGHT = 5
-# COINS_SOLD = 4
-# NUMBER_OF_TRADES = 6
+
+MODEL_NAME = "alpha.rnn"
+MODEL_PATH = f"rnn/saved_rnn_models/{MODEL_NAME}"
+
+HIDDEN_SIZE = 100
+INPUT_SIZE = 10
+OUTPUT_SIZE = 10
+NUM_LAYERS = 5
+BATCH_SIZE = 1 
 
 
-rnn = Net()
+rnn = Net(
+        input_size=INPUT_SIZE, 
+        hidden_size=HIDDEN_SIZE, 
+        output_size=OUTPUT_SIZE, 
+        num_layers=NUM_LAYERS,
+        batch_size=BATCH_SIZE
+    )
 datastore = DatastoreWrapper()
 binance = BinanceAPI()
 
@@ -30,8 +35,8 @@ def rnn_portfolio(step_num: int):
     if not session_exists:
         print("Session does not exist.\nCreating new session.")
         id = create_session()
-    print("Loading RNN Alpha Model.")
-    rnn.load_alpha()
+    print(f"Loading {MODEL_NAME} Model.")
+    rnn.load(MODEL_PATH)
     print("Requesting trading decision from RNN...")
     rnn_trade_decision = rnn.get_trade_decision()
     print(f"Trade decision -> {rnn_trade_decision}")
