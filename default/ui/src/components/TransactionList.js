@@ -8,7 +8,8 @@ export default function TransactionList({sessionId}) {
   const [activeTransactionId, setActiveTransactionId] = useState(-1)
 
   useEffect(() => {
-    getTransactions();
+    setTransactions([])
+    //getTransactions();
   }, [sessionId])
 
   const getTransactions = () => {
@@ -34,6 +35,7 @@ export default function TransactionList({sessionId}) {
         <div className="refreshButton" onClick={refreshTransactions}><HiRefresh/></div>
       </h2>
       <div className="transactionListDetail">
+        {transactions.length == 0 ? <button onClick={getTransactions}>Get Transactions</button> : null}
         {transactions.map((transaction, i) => <TransactionListItem transaction={transaction}
                                                                  setActiveTransaction={setActiveTransactionId}
                                                                  active={i == activeTransactionId ? true : false}

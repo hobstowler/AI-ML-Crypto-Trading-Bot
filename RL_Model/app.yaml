@@ -1,0 +1,7 @@
+runtime: python37
+service: rl
+
+instance_class: F4
+handlers:
+- url: /.*
+  script: auto

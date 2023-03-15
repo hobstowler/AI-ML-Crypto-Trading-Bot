@@ -28,6 +28,20 @@ export default function SessionNavigator({activeSession, setActiveSessionId}) {
       .catch((error) => console.log(error))
   }
 
+  const deleteSession = (sessionId, i) => {
+    fetch(`/session/${sessionId}`, {
+      method: 'DELETE'
+    })
+      .then(response => {
+        if (!response.ok) throw Error('Invalid response')
+        else {
+          refreshSessions()
+        }
+      })
+      .catch(error => console.log(error))
+
+  }
+
   return (
       <div className="sessionNavigatorWrapper">
       <table className="sessionNavigator">
@@ -48,11 +62,14 @@ export default function SessionNavigator({activeSession, setActiveSessionId}) {
                                                                           key={i}
                                                                           />)}
             </td>
-            <td className="sessions">
-              {sessions[activeSessionType] ? sessions[activeSessionType].map((session, i) => <SessionListItem session={session}
-                                                         active={session.id === activeSession ? true : false}
-                                                         setActiveSession={setActiveSessionId}
-                                                         key={i}/>) : `No sessions of type: ${activeSessionType}`}
+            <td><div className="sessions">
+              {sessions[activeSessionType] ? sessions[activeSessionType].map((session, i) =>
+                <SessionListItem session={session}
+                                 active={session.id === activeSession ? true : false}
+                                 setActiveSession={setActiveSessionId}
+                                 deleteSession={deleteSession}
+                                 key={i}/>) : `No sessions of type: ${activeSessionType}`}
+            </div>
             </td>
           </tr>
         </tbody>

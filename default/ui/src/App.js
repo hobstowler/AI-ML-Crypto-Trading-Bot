@@ -11,7 +11,7 @@ function App() {
         <Header/>
         <Routes>
           <Route path="/" element={<Home/>}/>
-          <Route path="/sessions" element={<Sessions/>}/>
+          <Route path="/session_management" element={<Sessions/>}/>
         </Routes>
       </BrowserRouter>
     </div>

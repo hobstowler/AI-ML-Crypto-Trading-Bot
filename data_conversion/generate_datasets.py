@@ -111,7 +111,7 @@ def normalize_data(df, scaler=None):
     df[number_columns] = scaler.fit_transform(df[number_columns])
     return df, scaler
 
-def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, test_split=0.1, seed=None):
+def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, test_split=0.1, norm_params=None, seed=None):
     """
     Generates the train, val and test datasets as normalized values for a csv file.
 
@@ -121,7 +121,11 @@ def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, t
         train_split (float, optional): Percentage of data to use for training. Defaults to 0.8.
         val_split (float, optional): Percentage of data to use for validation. Defaults to 0.1.
         test_split (float, optional): Percentage of data to use for testing. Defaults to 0.1.
+        norm_params (tuple, optional): Tuple containing the normalization parameters. Defaults to None.
         seed (int, optional): Seed value for random shuffling. Use to make consistent data sets. Defaults to None.
+
+    Returns:
+        tuple: tuple containing following lists: (data_min, data_max, scale)
     """
 
     # Read in the input file
@@ -145,6 +149,8 @@ def generate_csv_datasets(input_file, seq_len, train_split=0.8, val_split=0.1, t
     test_df.to_csv(f"./test_{seq_len}.csv", index=False)
     
     return scaler
+
+    return scale_params
 
 def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
     """
@@ -181,6 +187,14 @@ def tensors_from_csv(infile, seq_len, columns=[], batch_size=1):
 
     return tensors
 
+def inference_df_to_tensor(df, seq_len, columns=[]):
+
+    tensor = np.zeros((1, seq_len, len(columns)))
+    tensor[0] = df[columns].to_numpy()
+    torch_tensor = torch.from_numpy(tensor)
+
+    return torch_tensor
+
 
 def clean_dataset_csv_files(seq_len):
     os.remove(f"./train_{seq_len}.csv")
@@ -194,5 +208,4 @@ if __name__ == '__main__':
     args = get_arguments()
     # Call generate_csv_datasets with the cli arguments
     generate_csv_datasets(args.input_file, int(args.seq_len), float(args.train_split), 
-
-                                    float(args.val_split), float(args.test_split), args.seed)
+                            float(args.val_split), float(args.test_split), args.seed)

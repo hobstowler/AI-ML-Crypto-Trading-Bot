@@ -2,12 +2,13 @@ import os
 import sys
 import time
 from datetime import datetime, timezone
+from google.cloud import storage
 import pytz
 
 import pandas as pd
 import requests
 
-from project import Project
+#from project import Project
 
 #project = Project()
 
@@ -19,9 +20,9 @@ from project import Project
 ############################################################### """
 
 # TODO clean up and make programmatic
-train_start_dt_tm = '2021-01-01 00:00:00'
+train_start_dt_tm = '2021-02-01 00:00:00'
 train_start_dt = int(datetime.strptime(train_start_dt_tm, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp() * 1000)
-train_end_dt_tm = '2021-12-31 23:59:00'
+train_end_dt_tm = '2021-05-31 23:59:00'
 train_end_dt = int(datetime.strptime(train_end_dt_tm, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp() * 1000)
 test_start_dt_tm = '2022-01-01 00:00:00'
 test_start_dt = int(datetime.strptime(test_start_dt_tm, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp() * 1000)
@@ -29,7 +30,9 @@ test_end_dt_tm = '2022-12-31 23:59:00'
 test_end_dt = int(datetime.strptime(test_end_dt_tm, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc).timestamp() * 1000)
 
 train = True
-test = True
+test = False
+to_cloud = True
+bucket_name = 'ai-ml-bitcoin-bot.appspot.com'
 
 symbol = 'BTCUSD'
 interval = '30m'
@@ -59,6 +62,10 @@ columns = ['Open time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close time', 
 #df = pd.DataFrame(columns=columns)
 
 if __name__ == '__main__':
+    if to_cloud:
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(bucket_name)
+
     if train:
         for i in range(len(intervals)):
             interval_time = interval_times[i]
@@ -80,7 +87,14 @@ if __name__ == '__main__':
                     break
 
             df = pd.concat(dataframes, ignore_index=True)
-            df.to_csv(f'{os.getcwd()}/all_{train_start_dt_tm[:10]}-{train_end_dt_tm[:10]}_{interval}.csv', index=False)
+            f_name = f'train_{train_start_dt_tm[:10]}-{train_end_dt_tm[:10]}_{interval}'
+            if to_cloud:
+                blob = bucket.blob(f_name)
+                with blob.open("w") as f:
+                    f.write(df.to_csv(index=False))
+                print(f'Wrote csv with pandas as {f_name} to {bucket_name}.')
+            else:
+                df.to_csv(f'{os.getcwd()}/{f_name}.csv', index=False)
             print(f'Finished in {time.perf_counter() - s:0.2f} seconds')
 
     if test:
@@ -105,5 +119,12 @@ if __name__ == '__main__':
                     break
 
             df = pd.concat(dataframes, ignore_index=True)
-            df.to_csv(f'{os.getcwd()}/all_{test_start_dt_tm[:10]}-{test_end_dt_tm[:10]}_{interval}.csv', index=False)
+            f_name = f'test_{test_start_dt_tm[:10]}-{test_end_dt_tm[:10]}_{interval}'
+            if to_cloud:
+                blob = bucket.blob(f_name)
+                with blob.open("w") as f:
+                    f.write(df.to_csv(index=False))
+                print(f'Wrote csv with pandas as {f_name} to {bucket_name}.')
+            else:
+                df.to_csv(f'{os.getcwd()}/{f_name}.csv', index=False)
             print(f'Finished in {time.perf_counter() - s:0.2f} seconds')

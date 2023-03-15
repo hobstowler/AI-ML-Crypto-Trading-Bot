@@ -19,7 +19,8 @@ class CriticNetwork(nn.Module):
         )
 
         self.optimizer = optim.AdamW(self.parameters(), lr=alpha)
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.device = T.device('cpu')
+        #self.device = T.device('cuda:{}'.format(torch.cuda.current_device()) if T.cuda.is_available() else 'cpu')
         self.to(self.device)
 
     def forward(self, state):

@@ -15,7 +15,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-from model_tools import *
+from lstm.model_tools import *
  
 # Add parent directory to path so we can import from data_conversion
 current = os.path.dirname(os.path.realpath(__file__))
@@ -32,19 +32,20 @@ LR = 0.001
 EPOCHS = 10
 
 # Data hyperparameters
-INPUT_SIZE = 1
-OUTPUT_SIZE = 1
+FEATURES = ['close_price', 'volume']
+INPUT_SIZE = len(FEATURES)
+OUTPUT_SIZE = len(FEATURES)
 
 # For data collection and analysis
 MODEL_SAVE_POINTS = [10, 100, 500]
 loss_values = []
 
 
-class Net(nn.Module):
+class LSTM(nn.Module):
     """LSTM neural network architecture.
     """
     def __init__(self, input_size=1, hidden_size=10, output_size=1, num_layers=1, batch_size=1):
-        super(Net, self).__init__()
+        super(LSTM, self).__init__()
 
         self.input_size=input_size
         self.hidden_size=hidden_size
@@ -78,90 +79,16 @@ class Net(nn.Module):
         self.batch_size = batch_size
 
 
-def train(model, criterion, data_tensors, optimizer, save_points):
-    """
-    Perform training over one epoch of data.
-    """
-
-    # Initialize hidden layer to zeros
-    hidden_prev = model.init_hidden()
-
-    total_loss = 0 
-    iter = 0
-    for curr_tensor in data_tensors:
-
-        curr_tensor = curr_tensor.to(torch.float32)
-
-        # Split into input and target values
-        inputs, targets = curr_tensor[:,:-1,:], curr_tensor[:,1:,:]
-        output, hidden_prev = model(inputs, hidden_prev)
-        hidden_prev = (hidden_prev[0].detach(), hidden_prev[1].detach())
-        loss = criterion(output, targets)
-        model.zero_grad()
-        loss.backward()
-
-        # Update weights based on mainly the new gradients and learning rate
-        optimizer.step()
-
-        loss_values.append(loss.item())
-
-        total_loss += loss.item()
-
-        #if iter % 1000 == 0:
-        #    print(f'iteration: {iter}, training loss {loss.item()}')
-
-        # Save a model from each checkpoint
-        if iter in save_points:
-            save_model(model, optimizer, f'./models/model_{iter}.pt')
-
-        iter += 1
-
-    #plt.plot(loss_values)
-    #plt.show()
-
-    return total_loss / iter
-
-def validate(model, criterion, data_tensors):
-    """
-    Perform validation over one epoch of data.
-    """
-
-    # Initialize hidden layer to zeros
-    hidden_prev = model.init_hidden()
-
-    total_loss = 0
-    iter = 0
-    with torch.no_grad():
-        for curr_tensor in data_tensors:
-
-            curr_tensor = curr_tensor.to(torch.float32)
-
-            # Split into input and target values
-            inputs, targets = curr_tensor[:,:-1,:], curr_tensor[:,1:,:]
-            output, hidden_prev = model(inputs, hidden_prev)
-            hidden_prev = (hidden_prev[0].detach(), hidden_prev[1].detach())
-            loss = criterion(output, targets)
-
-            loss_values.append(loss.item())
-
-            total_loss += loss.item()
-
-            #if iter % 1000 == 0:
-            #    print(f'iteration: {iter}, validation loss {loss.item()}')
-
-            iter += 1
-    
-    return total_loss / iter
-
 def train_loop(save_points, model_name, hyperparams, data_source_info, plot=False):
     """
     Train with the specified hyperparameters over the given number of epochs
     """
 
+    input_size = len(data_source_info['columns'])
+    output_size = input_size
+
     # Unpack hyperparameters
-    input_size = hyperparams['input_size']
     hidden_size = hyperparams['hidden_size']
-    output_size = hyperparams['output_size']
     num_layers = hyperparams['num_layers']
     batch_size = hyperparams['batch_size']
     epochs = hyperparams['epochs']
@@ -175,12 +102,11 @@ def train_loop(save_points, model_name, hyperparams, data_source_info, plot=Fals
     columns = data_source_info['columns']
     
     # Initialize model
-    model = Net(input_size=input_size, hidden_size=hidden_size, output_size=output_size, 
+    model = LSTM(input_size=input_size, hidden_size=hidden_size, output_size=output_size, 
                 num_layers=num_layers, batch_size=batch_size)
 
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-
 
     # Get data in tensor form
     train_tensors = tensors_from_csv(train_source, seq_len=seq_len, columns=columns, batch_size=batch_size)
@@ -193,8 +119,8 @@ def train_loop(save_points, model_name, hyperparams, data_source_info, plot=Fals
 
     # Perform training over each epoch
     for epoch in range(epochs):
-        train_loss = train(model, criterion, train_tensors, optimizer, save_points=save_points)
-        val_loss = validate(model, criterion, val_tensors)
+        train_loss = train_lstm(model, criterion, train_tensors, optimizer, save_points=save_points)
+        val_loss = validate_lstm(model, criterion, val_tensors)
         _, pred_loss = predict(model, criterion, test_tensors, pred_len=6)
 
         print(f'Epoch {epoch}: training loss {train_loss} | val loss {val_loss} | pred loss {pred_loss}')
@@ -219,13 +145,29 @@ def train_loop(save_points, model_name, hyperparams, data_source_info, plot=Fals
 
     save_model(model, optimizer, f'./models/model_{model_name}.pt')
 
-def train_from_csv(infile):
+    results = {}
+    results['train_loss'] = train_losses
+    results['val_loss'] = val_losses
+    results['test_loss'] = pred_losses
+
+    return results
+
+def train_from_csv(infile, outfile, features = FEATURES):
     """
     Loop through a csv file and perform training on each set of hyperparameters
     """
 
     # Read in csv file
     df = pd.read_csv(infile)
+
+    # Make list of epochs from max value in csv
+    epochs = list(range(1, int(df['epochs'].max()) + 1))
+
+    # Make the column list
+    columns = ['type'] + df.columns.values.tolist() + epochs
+
+    # Make output dataframe
+    out_df = pd.DataFrame(columns=columns)
 
     # For each set of supplied hyperparameters perform training
     for idx in range(len(df)):
@@ -234,9 +176,7 @@ def train_from_csv(infile):
 
         hyperparams = {}
         # Unpack hyperparameters
-        hyperparams['input_size'] = df.loc[idx, 'input_size']
         hyperparams['hidden_size'] = df.loc[idx, 'hidden_size']
-        hyperparams['output_size'] = df.loc[idx, 'output_size']
         hyperparams['num_layers'] = df.loc[idx, 'num_layers']
         hyperparams['batch_size'] = df.loc[idx, 'batch_size']
         hyperparams['epochs'] = df.loc[idx, 'epochs']
@@ -248,10 +188,23 @@ def train_from_csv(infile):
             'val_source': './val_48.csv',
             'test_source': './test_48.csv',
             'seq_len': 48,
-            'columns': ['close_price']
+            'columns': features
         }
     
-        train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=False)
+        results = train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=True)
+        
+        types = ['train', 'val', 'test']
+
+        for i in range(len(types)):
+            out_df.loc[idx * 3 + i, 'type'] = types[i]
+            for key, value in hyperparams.items():
+                out_df.loc[idx * 3 + i, key] = value
+
+            for epoch, loss in enumerate(results[f'{types[i]}_loss']):
+                out_df.loc[idx * 3 + i, epoch + 1] = loss
+
+    # Save output dataframe to csv
+    out_df.to_csv(outfile)
 
 
 
@@ -259,25 +212,28 @@ if __name__=='__main__':
 
     # Initialize hyperparameters and data source and perform one training loop
 
-    hyperparams = {
-        'input_size': INPUT_SIZE,
-        'hidden_size': HIDDEN_SIZE,
-        'output_size': OUTPUT_SIZE,
-        'num_layers': NUM_LAYERS,
-        'batch_size': BATCH_SIZE,
-        'epochs': EPOCHS,
-        'lr': LR
-    }
+    # hyperparams = {
+    #     'input_size': INPUT_SIZE,
+    #     'hidden_size': HIDDEN_SIZE,
+    #     'output_size': OUTPUT_SIZE,
+    #     'num_layers': NUM_LAYERS,
+    #     'batch_size': BATCH_SIZE,
+    #     'epochs': EPOCHS,
+    #     'lr': LR
+    # }
 
-    data_source_info = {
-        'train_source': './train_48.csv',
-        'val_source': './val_48.csv',
-        'test_source': './test_48.csv',
-        'seq_len': 48,
-        'columns': ['close_price']
-    }
+    # data_source_info = {
+    #     'train_source': './train_48.csv',
+    #     'val_source': './val_48.csv',
+    #     'test_source': './test_48.csv',
+    #     'seq_len': 48,
+    #     'columns': ['close_price']
+    # }
 
-    train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=True)
+    # train_loop(MODEL_SAVE_POINTS, 'test_1', hyperparams, data_source_info, plot=True)
+
+    train_from_csv(infile='./hyperparams.csv', outfile='./results.csv')
+
 
 
 
